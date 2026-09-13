@@ -10,15 +10,16 @@
     .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; margin-bottom: 25px; }
     .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.08); }
     .score-display { font-size: 36px; font-weight: bold; color: #0284c7; margin: 10px 0; }
-    .tables-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; }
+    .tables-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 15px; margin-bottom: 25px; }
     table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; border-radius: 8px; overflow: hidden; }
-    th, td { border-bottom: 1px solid #e2e8f0; padding: 8px 12px; text-align: left; font-size: 14px; }
+    th, td { border-bottom: 1px solid #e2e8f0; padding: 8px 10px; text-align: left; font-size: 14px; }
     th { background: #0284c7; color: white; }
     tr:nth-child(even) { background: #f8fafc; }
     .match-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; }
     button { background: #0284c7; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
     button:hover { background: #0369a1; }
-    select { padding: 6px; margin-right: 5px; }
+    select, input[type="text"] { padding: 5px; border: 1px solid #cbd5e1; border-radius: 4px; }
+    .team-edit-input { width: 110px; font-size: 13px; }
   </style>
 </head>
 <body>
@@ -27,7 +28,7 @@
   <h2>Live Courts</h2>
   <div class="grid-3" id="courtsContainer"></div>
 
-  <h2>Group Standings</h2>
+  <h2>Group Standings & Edit Teams</h2>
   <div class="tables-container" id="standingsContainer"></div>
 
   <h2>Upcoming Match Queue</h2>
@@ -36,7 +37,6 @@
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
-    let currentData = null;
 
     socket.on('initData', renderAll);
     socket.on('stateUpdated', renderAll);
@@ -47,7 +47,6 @@
     function renderAll(data) {
       if (!data) return;
       const { tournament, activeCourts } = data;
-      currentData = data;
 
       // Render Active Courts
       let courtsHtml = '';
@@ -63,20 +62,25 @@
       }
       document.getElementById('courtsContainer').innerHTML = courtsHtml;
 
-      // Render Standings Tables
+      // Render Standings Tables with Inline Name Edit
       let standingsHtml = '';
       ['A', 'B', 'C'].forEach(g => {
         standingsHtml += `
           <div class="card">
             <h3>Group ${g}</h3>
             <table>
-              <tr><th>Pair</th><th>W</th><th>L</th><th>Diff</th></tr>
+              <tr><th>Pair Name</th><th>W</th><th>L</th><th>Diff</th><th>Action</th></tr>
               ${tournament.groups[g].map(p => `
                 <tr>
-                  <td><strong>${p.name}</strong></td>
+                  <td>
+                    <input type="text" id="input-${p.id}" value="${p.name}" class="team-edit-input" />
+                  </td>
                   <td>${p.wins}</td>
                   <td>${p.losses}</td>
                   <td>${p.diff > 0 ? '+' + p.diff : p.diff}</td>
+                  <td>
+                    <button onclick="saveTeamName('${g}', '${p.id}')" style="padding:2px 6px; font-size:12px;">Save</button>
+                  </td>
                 </tr>`).join('')}
             </table>
           </div>`;
@@ -87,10 +91,10 @@
       const upcoming = tournament.schedule.filter(m => m.status === 'UPCOMING');
       let scheduleHtml = upcoming.length === 0 ? '<p>No upcoming matches left!</p>' : '';
       
-	upcoming.forEach((m, index) => {
+      upcoming.forEach((m, index) => {
         scheduleHtml += `
           <div class="match-item">
-            <span><strong>[Group ${m.group}]</strong> ${m.teamA} vs ${m.teamB}</span>
+            <span><strong>#${index + 1} [Group ${m.group}]</strong> ${m.teamA} vs ${m.teamB}</span>
             <div>
               <select id="assign-court-${m.id}">
                 <option value="1">Court 1</option>
@@ -102,6 +106,13 @@
           </div>`;
       });
       document.getElementById('scheduleContainer').innerHTML = scheduleHtml;
+    }
+
+    function saveTeamName(group, teamId) {
+      const newName = document.getElementById(`input-${teamId}`).value.trim();
+      if (newName) {
+        socket.emit('updateTeamName', { group, teamId, newName });
+      }
     }
 
     function assignMatch(matchId) {

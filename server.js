@@ -12,31 +12,31 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 const DATA_FILE = path.join(__dirname, 'tournament_data.json');
 
-// Save data to JSON file
 function saveData() {
   fs.writeFileSync(DATA_FILE, JSON.stringify({ tournament, activeCourts }, null, 2));
 }
 
-// Generate default structure
 function initializeTournament() {
   const groups = { A: [], B: [], C: [] };
   ['A', 'B', 'C'].forEach(g => {
     for (let i = 1; i <= 6; i++) {
-      groups[g].push({ name: `Pair ${g}${i}`, wins: 0, losses: 0, pointsFor: 0, pointsAgainst: 0, diff: 0 });
+      groups[g].push({ id: `${g}${i}`, name: `Pair ${g}${i}`, wins: 0, losses: 0, pointsFor: 0, pointsAgainst: 0, diff: 0 });
     }
   });
 
   let schedule = [];
   let matchId = 1;
   ['A', 'B', 'C'].forEach(g => {
-    const teams = groups[g].map(t => t.name);
+    const teams = groups[g];
     for (let i = 0; i < teams.length; i++) {
       for (let j = i + 1; j < teams.length; j++) {
         schedule.push({
           id: matchId++,
           group: g,
-          teamA: teams[i],
-          teamB: teams[j],
+          teamAId: teams[i].id,
+          teamBId: teams[j].id,
+          teamA: teams[i].name,
+          teamB: teams[j].name,
           scoreA: 0,
           scoreB: 0,
           status: 'UPCOMING',
@@ -49,7 +49,6 @@ function initializeTournament() {
   return { groups, schedule };
 }
 
-// Load existing data from file OR initialize new
 let tournament;
 let activeCourts = {
   1: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0 },
@@ -62,9 +61,7 @@ if (fs.existsSync(DATA_FILE)) {
     const saved = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
     tournament = saved.tournament;
     activeCourts = saved.activeCourts;
-    console.log("Loaded existing tournament data from disk.");
   } catch (err) {
-    console.error("Error reading file, starting fresh:", err);
     tournament = initializeTournament();
   }
 } else {
@@ -74,6 +71,31 @@ if (fs.existsSync(DATA_FILE)) {
 
 io.on('connection', (socket) => {
   socket.emit('initData', { tournament, activeCourts });
+
+  // Update Team Name Handler
+  socket.on('updateTeamName', ({ group, teamId, newName }) => {
+    const groupList = tournament.groups[group];
+    const team = groupList.find(t => t.id === teamId);
+    if (team) {
+      const oldName = team.name;
+      team.name = newName;
+
+      // Update name across all schedule matches
+      tournament.schedule.forEach(m => {
+        if (m.teamAId === teamId) m.teamA = newName;
+        if (m.teamBId === teamId) m.teamB = newName;
+      });
+
+      // Update name on active courts if currently playing
+      for (let c = 1; c <= 3; c++) {
+        if (activeCourts[c].teamA === oldName) activeCourts[c].teamA = newName;
+        if (activeCourts[c].teamB === oldName) activeCourts[c].teamB = newName;
+      }
+
+      saveData();
+      io.emit('stateUpdated', { tournament, activeCourts });
+    }
+  });
 
   socket.on('assignMatch', ({ matchId, courtId }) => {
     const match = tournament.schedule.find(m => m.id === matchId);
@@ -112,8 +134,8 @@ io.on('connection', (socket) => {
       match.scoreB = court.scoreB;
 
       const groupList = tournament.groups[match.group];
-      const tA = groupList.find(t => t.name === match.teamA);
-      const tB = groupList.find(t => t.name === match.teamB);
+      const tA = groupList.find(t => t.id === match.teamAId);
+      const tB = groupList.find(t => t.id === match.teamBId);
 
       if (tA && tB) {
         tA.pointsFor += court.scoreA;
