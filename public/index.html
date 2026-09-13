@@ -12,14 +12,26 @@
     .score-display { font-size: 36px; font-weight: bold; color: #0284c7; margin: 10px 0; }
     .tables-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 15px; margin-bottom: 25px; }
     table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; border-radius: 8px; overflow: hidden; }
-    th, td { border-bottom: 1px solid #e2e8f0; padding: 8px 10px; text-align: left; font-size: 14px; }
+    th, td { border-bottom: 1px solid #e2e8f0; padding: 8px 10px; text-align: left; font-size: 14px; vertical-align: middle; }
     th { background: #0284c7; color: white; }
     tr:nth-child(even) { background: #f8fafc; }
     .match-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; }
     button { background: #0284c7; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
     button:hover { background: #0369a1; }
-    select, input[type="text"] { padding: 5px; border: 1px solid #cbd5e1; border-radius: 4px; }
-    .team-edit-input { width: 110px; font-size: 13px; }
+    select { padding: 5px; border: 1px solid #cbd5e1; border-radius: 4px; }
+    /* Multiline textarea styling */
+    .team-edit-textarea { 
+      width: 120px; 
+      height: 42px; 
+      font-size: 13px; 
+      font-family: inherit; 
+      resize: vertical; 
+      border: 1px solid #cbd5e1; 
+      border-radius: 4px;
+      padding: 4px;
+    }
+    /* Render multi-line text formatting */
+    .multiline-name { white-space: pre-line; display: inline-block; }
   </style>
 </head>
 <body>
@@ -55,14 +67,16 @@
         courtsHtml += `
           <div class="card">
             <h3>Court ${i}</h3>
-            <div><strong>${c.teamA}</strong> vs <strong>${c.teamB}</strong></div>
+            <div>
+              <strong class="multiline-name">${c.teamA}</strong> vs <strong class="multiline-name">${c.teamB}</strong>
+            </div>
             <div class="score-display" id="c${i}-score">${c.scoreA} - ${c.scoreB}</div>
             ${c.matchId ? `<button onclick="finishMatch(${i})" style="background:#ef4444;">End Match</button>` : '<em>Court Available</em>'}
           </div>`;
       }
       document.getElementById('courtsContainer').innerHTML = courtsHtml;
 
-      // Render Standings Tables with Inline Name Edit
+      // Render Standings Tables with Multiline Textarea
       let standingsHtml = '';
       ['A', 'B', 'C'].forEach(g => {
         standingsHtml += `
@@ -73,13 +87,13 @@
               ${tournament.groups[g].map(p => `
                 <tr>
                   <td>
-                    <input type="text" id="input-${p.id}" value="${p.name}" class="team-edit-input" />
+                    <textarea id="input-${p.id}" class="team-edit-textarea">${p.name}</textarea>
                   </td>
                   <td>${p.wins}</td>
                   <td>${p.losses}</td>
                   <td>${p.diff > 0 ? '+' + p.diff : p.diff}</td>
                   <td>
-                    <button onclick="saveTeamName('${g}', '${p.id}')" style="padding:2px 6px; font-size:12px;">Save</button>
+                    <button onclick="saveTeamName('${g}', '${p.id}')" style="padding:4px 8px; font-size:12px;">Save</button>
                   </td>
                 </tr>`).join('')}
             </table>
@@ -94,7 +108,10 @@
       upcoming.forEach((m, index) => {
         scheduleHtml += `
           <div class="match-item">
-            <span><strong>#${index + 1} [Group ${m.group}]</strong> ${m.teamA} vs ${m.teamB}</span>
+            <span>
+              <strong>#${index + 1} [Group ${m.group}]</strong> 
+              <span class="multiline-name">${m.teamA}</span> vs <span class="multiline-name">${m.teamB}</span>
+            </span>
             <div>
               <select id="assign-court-${m.id}">
                 <option value="1">Court 1</option>
