@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Court Scorer</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; padding: 20px; }
+    .score-box { display: flex; justify-content: space-around; margin-top: 20px; }
+    .team { border: 1px solid #ccc; padding: 20px; border-radius: 8px; width: 40%; }
+    button { font-size: 24px; padding: 10px 20px; margin: 5px; cursor: pointer; }
+    .score { font-size: 48px; font-weight: bold; margin: 10px 0; }
+  </style>
+</head>
+<body>
+  <h2 id="courtTitle">Court Scorer</h2>
+  <div class="score-box">
+    <div class="team">
+      <h3 id="teamAName">Team A</h3>
+      <div class="score" id="scoreA">0</div>
+      <button onclick="adjustScore('A', 1)">+1</button>
+      <button onclick="adjustScore('A', -1)">-1</button>
+    </div>
+    <div class="team">
+      <h3 id="teamBName">Team B</h3>
+      <div class="score" id="scoreB">0</div>
+      <button onclick="adjustScore('B', 1)">+1</button>
+      <button onclick="adjustScore('B', -1)">-1</button>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    const urlParams = new URLSearchParams(window.location.search);
+    const courtId = urlParams.get('court') || 1;
+    
+    document.getElementById('courtTitle').innerText = `Court ${courtId} Scorer`;
+
+    let scoreA = 0, scoreB = 0;
+
+    socket.on('initData', (data) => {
+      if(data.courts[courtId]) {
+        scoreA = data.courts[courtId].scoreA;
+        scoreB = data.courts[courtId].scoreB;
+        document.getElementById('teamAName').innerText = data.courts[courtId].teamA;
+        document.getElementById('teamBName').innerText = data.courts[courtId].teamB;
+        updateDisplay();
+      }
+    });
+
+    function adjustScore(team, delta) {
+      if (team === 'A') scoreA = Math.max(0, scoreA + delta);
+      if (team === 'B') scoreB = Math.max(0, scoreB + delta);
+      updateDisplay();
+      socket.emit('updateScore', { courtId, scoreA, scoreB });
+    }
+
+    function updateDisplay() {
+      document.getElementById('scoreA').innerText = scoreA;
+      document.getElementById('scoreB').innerText = scoreB;
+    }
+  </script>
+</body>
+</html>

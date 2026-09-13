@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Host Scoreboard</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; background: #f4f4f9; }
+    .grid { display: flex; gap: 20px; }
+    .card { background: white; border-radius: 8px; padding: 20px; flex: 1; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .score { font-size: 32px; font-weight: bold; color: #2c3e50; }
+  </style>
+</head>
+<body>
+  <h1>Pickleball Tournament - Live Scoreboard</h1>
+  <div class="grid">
+    <div class="card">
+      <h2>Court 1</h2>
+      <div id="c1-teams">Team A vs Team B</div>
+      <div class="score"><span id="c1-scoreA">0</span> - <span id="c1-scoreB">0</span></div>
+    </div>
+    <div class="card">
+      <h2>Court 2</h2>
+      <div id="c2-teams">Team A vs Team B</div>
+      <div class="score"><span id="c2-scoreA">0</span> - <span id="c2-scoreB">0</span></div>
+    </div>
+    <div class="card">
+      <h2>Court 3</h2>
+      <div id="c3-teams">Team A vs Team B</div>
+      <div class="score"><span id="c3-scoreA">0</span> - <span id="c3-scoreB">0</span></div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+
+    socket.on('initData', (data) => {
+      for (let i = 1; i <= 3; i++) {
+        if(data.courts[i]) {
+          document.getElementById(`c${i}-teams`).innerText = `${data.courts[i].teamA} vs ${data.courts[i].teamB}`;
+          document.getElementById(`c${i}-scoreA`).innerText = data.courts[i].scoreA;
+          document.getElementById(`c${i}-scoreB`).innerText = data.courts[i].scoreB;
+        }
+      }
+    });
+
+    socket.on('scoreUpdated', ({ courtId, scoreA, scoreB }) => {
+      document.getElementById(`c${courtId}-scoreA`).innerText = scoreA;
+      document.getElementById(`c${courtId}-scoreB`).innerText = scoreB;
+    });
+  </script>
+</body>
+</html>
