@@ -35,16 +35,7 @@
     .brand-logo { height: 32px; object-fit: contain; }
 
     h1 { color: var(--dark-slate); font-size: 20px; margin: 0; }
-    h2 { color: var(--primary-red); font-size: 16px; margin: 5px 0 10px 0; font-weight: 700; }
-
-    .court-selector {
-      background: white;
-      padding: 12px;
-      border-radius: 8px;
-      margin-bottom: 12px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    }
-    select { padding: 8px; font-size: 16px; border-radius: 6px; border: 1px solid #cbd5e1; width: 100%; }
+    h2 { color: var(--primary-red); font-size: 18px; margin: 5px 0 15px 0; font-weight: 700; }
 
     .action-grid {
       display: grid;
@@ -182,6 +173,22 @@
       touch-action: manipulation;
     }
     .btn-minus:active { background: #cbd5e1; }
+
+    .btn-finish {
+      background: #dc2626;
+      color: white;
+      border: none;
+      font-size: 16px;
+      font-weight: 700;
+      padding: 14px 0;
+      border-radius: 8px;
+      width: 100%;
+      cursor: pointer;
+      margin-top: 10px;
+      touch-action: manipulation;
+      box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2);
+    }
+    .btn-finish:active { background: #991b1b; transform: scale(0.98); }
   </style>
 </head>
 <body>
@@ -189,15 +196,6 @@
   <div class="brand-header">
     <img src="/logo.png" alt="Sanmina Logo" class="brand-logo">
     <h1>Scorer Controller</h1>
-  </div>
-
-  <div class="court-selector">
-    <label><strong>Select Assigned Court:</strong></label>
-    <select id="courtSelect" onchange="changeCourt()">
-      <option value="1">Court 1</option>
-      <option value="2">Court 2</option>
-      <option value="3">Court 3</option>
-    </select>
   </div>
 
   <h2 id="courtTitle">Court 1 - Live Match</h2>
@@ -225,6 +223,9 @@
     </div>
   </div>
 
+  <!-- Finish Match Button -->
+  <button class="btn-finish" onclick="submitFinishMatch()">🏁 Finish Match & Submit Score</button>
+
   <!-- Coin Toss Modal Overlay -->
   <div class="toss-modal" id="tossModal">
     <div class="toss-card">
@@ -242,8 +243,7 @@
   <script>
     const socket = io();
     const urlParams = new URLSearchParams(window.location.search);
-    let courtId = parseInt(urlParams.get('court')) || 1;
-    document.getElementById('courtSelect').value = courtId;
+    const courtId = parseInt(urlParams.get('court')) || 1;
 
     let currentScoreA = 0;
     let currentScoreB = 0;
@@ -260,12 +260,6 @@
         document.getElementById('scoreB').innerText = scoreB;
       }
     });
-
-    function changeCourt() {
-      courtId = parseInt(document.getElementById('courtSelect').value);
-      window.history.replaceState(null, null, `?court=${courtId}`);
-      socket.emit('initData');
-    }
 
     function toggleFlipSides() {
       isFlipped = !isFlipped;
@@ -310,7 +304,6 @@
 
       const result = Math.random() < 0.5 ? 'HEAD' : 'TAIL';
 
-      // 2 Seconds Spin Countdown
       setTimeout(() => {
         coin.classList.remove('spinning');
         coin.innerText = result;
@@ -339,6 +332,15 @@
         currentScoreB = Math.max(0, currentScoreB + amount);
       }
       socket.emit('updateScore', { courtId, scoreA: currentScoreA, scoreB: currentScoreB });
+    }
+
+    function submitFinishMatch() {
+      const teamA = document.getElementById('teamAName').innerText;
+      const teamB = document.getElementById('teamBName').innerText;
+      
+      if (confirm(`Are you sure you want to finish the match for Court ${courtId}?\n\nFinal Score:\n${teamA}: ${currentScoreA}\n${teamB}: ${currentScoreB}`)) {
+        socket.emit('finishMatch', { courtId });
+      }
     }
   </script>
 </body>
