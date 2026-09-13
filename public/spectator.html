@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live Spectator Leaderboard - Pickleball Tournament</title>
+  <style>
+    body { font-family: sans-serif; margin: 0; padding: 20px; background: #0f172a; color: #f8fafc; }
+    h1, h2 { color: #38bdf8; text-align: center; margin-bottom: 20px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; margin-bottom: 30px; }
+    .card { background: #1e293b; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); text-align: center; border: 1px solid #334155; }
+    .score-display { font-size: 42px; font-weight: bold; color: #38bdf8; margin: 15px 0; }
+    .tables-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; margin-bottom: 30px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; background: #1e293b; border-radius: 8px; overflow: hidden; }
+    th, td { border-bottom: 1px solid #334155; padding: 10px; text-align: left; font-size: 14px; }
+    th { background: #0284c7; color: white; }
+    tr:nth-child(even) { background: #0f172a; }
+    .multiline-name { white-space: pre-line; display: inline-block; font-weight: bold; }
+    .badge { background: #22c55e; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px; }
+    .match-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #334155; }
+  </style>
+</head>
+<body>
+  <h1>🎾 Pickleball Tournament Live Leaderboard 🎾</h1>
+
+  <h2>Live Courts</h2>
+  <div class="grid-3" id="courtsContainer"></div>
+
+  <h2>Knockout Stage</h2>
+  <div class="card" style="margin-bottom: 30px; text-align: left;">
+    <div id="knockoutMatchesContainer"></div>
+  </div>
+
+  <h2>Group Standings</h2>
+  <div class="tables-container" id="standingsContainer"></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+
+    socket.on('initData', renderAll);
+    socket.on('stateUpdated', renderAll);
+    socket.on('scoreUpdated', ({ courtId, scoreA, scoreB }) => {
+      const el = document.getElementById(`c${courtId}-score`);
+      if (el) el.innerText = `${scoreA} - ${scoreB}`;
+    });
+
+    function renderAll(data) {
+      if (!data) return;
+      const { tournament, activeCourts } = data;
+
+      // Render Live Courts
+      let courtsHtml = '';
+      for (let i = 1; i <= 3; i++) {
+        const c = activeCourts[i];
+        courtsHtml += `
+          <div class="card">
+            <h3 style="color:#94a3b8; margin-top:0;">Court ${i}</h3>
+            ${c.matchId ? `
+              <div style="font-size: 18px;">
+                <span class="multiline-name" style="color:#f8fafc;">${c.teamA}</span>
+                <div style="color:#64748b; font-size:14px; margin: 4px 0;">VS</div>
+                <span class="multiline-name" style="color:#f8fafc;">${c.teamB}</span>
+              </div>
+              <div class="score-display" id="c${i}-score">${c.scoreA} - ${c.scoreB}</div>
+              <span class="badge">MATCH IN PROGRESS</span>
+            ` : '<div style="color:#64748b; margin: 30px 0;">Court Available</div>'}
+          </div>`;
+      }
+      document.getElementById('courtsContainer').innerHTML = courtsHtml;
+
+      // Render Knockout Bracket
+      if (tournament.knockout && tournament.knockout.generated) {
+        let koHtml = '';
+        tournament.knockout.matches.forEach(m => {
+          koHtml += `
+            <div class="match-item">
+              <span>
+                <strong style="color:#38bdf8;">${m.label}:</strong> 
+                <span class="multiline-name">${m.teamA}</span> vs <span class="multiline-name">${m.teamB}</span>
+              </span>
+              <span>
+                ${m.winner ? `<strong style="color:#22c55e;">Winner: ${m.winner}</strong>` : `<em style="color:#94a3b8;">${m.status}</em>`}
+              </span>
+            </div>`;
+        });
+        document.getElementById('knockoutMatchesContainer').innerHTML = koHtml;
+      } else {
+        document.getElementById('knockoutMatchesContainer').innerHTML = '<p style="color:#94a3b8; text-align:center;">Round-Robin stage in progress. Knockout bracket will appear once finalized!</p>';
+      }
+
+      // Render Group Standings
+      let standingsHtml = '';
+      ['A', 'B', 'C'].forEach(g => {
+        standingsHtml += `
+          <div class="card" style="text-align:left;">
+            <h3 style="color:#38bdf8; margin-top:0;">Group ${g}</h3>
+            <table>
+              <tr><th>Rank</th><th>Pair Name</th><th>W</th><th>L</th><th>Diff</th></tr>
+              ${tournament.groups[g].map((p, idx) => `
+                <tr>
+                  <td>#${idx + 1}</td>
+                  <td><span class="multiline-name">${p.name}</span></td>
+                  <td style="color:#22c55e; font-weight:bold;">${p.wins}</td>
+                  <td style="color:#ef4444;">${p.losses}</td>
+                  <td>${p.diff > 0 ? '+' + p.diff : p.diff}</td>
+                </tr>`).join('')}
+            </table>
+          </div>`;
+      });
+      document.getElementById('standingsContainer').innerHTML = standingsHtml;
+    }
+  </script>
+</body>
+</html>

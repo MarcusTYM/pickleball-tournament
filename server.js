@@ -9,6 +9,9 @@ const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 
 app.use(express.static(path.join(__dirname, 'public')));
+app.get('/spectator', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'spectator.html'));
+});
 
 // Initialize Upstash Redis client
 const redis = new Redis({
