@@ -7,23 +7,34 @@
   <style>
     body { font-family: sans-serif; margin: 0; padding: 20px; background: #f4f6f9; color: #333; }
     h1, h2 { color: #1e293b; margin: 0; }
-    .header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    
+    .header-bar { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      margin-bottom: 25px; 
+      background: white; 
+      padding: 15px 20px; 
+      border-radius: 8px; 
+      box-shadow: 0 2px 4px rgba(0,0,0,0.08); 
+    }
+    .header-brand { display: flex; align-items: center; gap: 15px; }
+    .header-logo { height: 45px; object-fit: contain; }
+
     .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; margin-bottom: 25px; }
     .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.08); }
-    .score-display { font-size: 36px; font-weight: bold; color: #0284c7; margin: 10px 0; }
+    .score-display { font-size: 36px; font-weight: bold; color: #e1251b; margin: 10px 0; }
     .tables-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; margin-bottom: 25px; }
     table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; border-radius: 8px; overflow: hidden; }
     th, td { border-bottom: 1px solid #e2e8f0; padding: 8px 10px; text-align: left; font-size: 14px; vertical-align: middle; }
-    th { background: #0284c7; color: white; }
+    th { background: #e1251b; color: white; }
     tr:nth-child(even) { background: #f8fafc; }
     
-    /* Container padding adjustment for queue card */
     #scheduleContainer, #knockoutMatchesContainer {
       padding: 0;
       overflow: hidden;
     }
 
-    /* Match item zebra striping & hover effects */
     .match-item {
       display: flex;
       justify-content: space-between;
@@ -33,40 +44,31 @@
       transition: background-color 0.15s ease-in-out;
     }
 
-    /* Alternating row colors */
-    .match-item:nth-child(even) {
-      background-color: #f8fafc;
-    }
+    .match-item:nth-child(even) { background-color: #f8fafc; }
+    .match-item:nth-child(odd) { background-color: #ffffff; }
 
-    .match-item:nth-child(odd) {
-      background-color: #ffffff;
-    }
+    /* Red highlight on hover matching brand tint */
+    .match-item:hover { background-color: #fef2f2 !important; }
+    .match-item:last-child { border-bottom: none; }
 
-    /* Soft blue hover highlight effect */
-    .match-item:hover {
-      background-color: #e0f2fe !important;
-    }
-
-    .match-item:last-child {
-      border-bottom: none;
-    }
-
-    button { background: #0284c7; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
-    button:hover { background: #0369a1; }
+    button { background: #e1251b; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+    button:hover { background: #b91c1c; }
     select, input { padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 14px; }
     .team-edit-textarea { width: 120px; height: 42px; font-size: 13px; font-family: inherit; resize: vertical; border: 1px solid #cbd5e1; border-radius: 4px; padding: 4px; }
     .multiline-name { white-space: pre-line; display: inline-block; }
+    
     .btn-green { background: #16a34a; font-size: 16px; padding: 10px 20px; }
     .btn-green:hover { background: #15803d; }
-    .btn-red { background: #dc2626; font-weight: bold; padding: 8px 16px; }
-    .btn-red:hover { background: #b91c1c; }
+    .btn-red { background: #991b1b; font-weight: bold; padding: 8px 16px; }
+    .btn-red:hover { background: #7f1d1d; }
     .setup-box { max-width: 400px; margin: 40px auto; text-align: center; }
   </style>
 </head>
 <body>
   <div id="setupScreen" class="card setup-box" style="display: none;">
+    <img src="/logo.png" alt="Sanmina Logo" style="height: 60px; margin-bottom: 15px;">
     <h2>🎾 Tournament Setup</h2>
-    <p>Configure your event parameters:</p>
+    <p>Configure event parameters:</p>
     <div style="margin-bottom: 15px; text-align: left;">
       <label><strong>Total Number of Pairs:</strong></label><br>
       <input type="number" id="numTeams" value="20" min="4" max="60" style="width: 93%;">
@@ -80,7 +82,10 @@
 
   <div id="dashboardScreen" style="display: none;">
     <div class="header-bar">
-      <h1>Pickleball Tournament Host Dashboard</h1>
+      <div class="header-brand">
+        <img src="/logo.png" alt="Sanmina Logo" class="header-logo">
+        <h1>Pickleball Tournament Host Dashboard</h1>
+      </div>
       <button class="btn-red" onclick="resetTournament()">🔄 Reset Entire Tournament</button>
     </div>
 
@@ -145,7 +150,7 @@
               <strong class="multiline-name">${c.teamA}</strong> vs <strong class="multiline-name">${c.teamB}</strong>
             </div>
             <div class="score-display" id="c${i}-score">${c.scoreA} - ${c.scoreB}</div>
-            ${c.matchId ? `<button onclick="finishMatch(${i})" style="background:#ef4444;">End Match</button>` : '<em>Court Available</em>'}
+            ${c.matchId ? `<button onclick="finishMatch(${i})" style="background:#dc2626;">End Match</button>` : '<em>Court Available</em>'}
           </div>`;
       }
       document.getElementById('courtsContainer').innerHTML = courtsHtml;
@@ -158,7 +163,7 @@
           koHtml += `
             <div class="match-item">
               <span>
-                <strong>${m.label}:</strong> 
+                <strong style="color:#e1251b;">${m.label}:</strong> 
                 <span class="multiline-name">${m.teamA}</span> vs <span class="multiline-name">${m.teamB}</span>
                 ${m.winner ? `<strong style="color:#16a34a; margin-left:10px;">(Winner: ${m.winner})</strong>` : ''}
               </span>
