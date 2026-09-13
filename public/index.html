@@ -2,52 +2,118 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Host Scoreboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Host Dashboard - Pickleball Tournament</title>
   <style>
-    body { font-family: sans-serif; padding: 20px; background: #f4f4f9; }
-    .grid { display: flex; gap: 20px; }
-    .card { background: white; border-radius: 8px; padding: 20px; flex: 1; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-    .score { font-size: 32px; font-weight: bold; color: #2c3e50; }
+    body { font-family: sans-serif; margin: 0; padding: 20px; background: #f4f6f9; color: #333; }
+    h1, h2 { color: #1e293b; }
+    .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; margin-bottom: 25px; }
+    .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.08); }
+    .score-display { font-size: 36px; font-weight: bold; color: #0284c7; margin: 10px 0; }
+    .tables-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; border-radius: 8px; overflow: hidden; }
+    th, td { border-bottom: 1px solid #e2e8f0; padding: 8px 12px; text-align: left; font-size: 14px; }
+    th { background: #0284c7; color: white; }
+    tr:nth-child(even) { background: #f8fafc; }
+    .match-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; }
+    button { background: #0284c7; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
+    button:hover { background: #0369a1; }
+    select { padding: 6px; margin-right: 5px; }
   </style>
 </head>
 <body>
-  <h1>Pickleball Tournament - Live Scoreboard</h1>
-  <div class="grid">
-    <div class="card">
-      <h2>Court 1</h2>
-      <div id="c1-teams">Team A vs Team B</div>
-      <div class="score"><span id="c1-scoreA">0</span> - <span id="c1-scoreB">0</span></div>
-    </div>
-    <div class="card">
-      <h2>Court 2</h2>
-      <div id="c2-teams">Team A vs Team B</div>
-      <div class="score"><span id="c2-scoreA">0</span> - <span id="c2-scoreB">0</span></div>
-    </div>
-    <div class="card">
-      <h2>Court 3</h2>
-      <div id="c3-teams">Team A vs Team B</div>
-      <div class="score"><span id="c3-scoreA">0</span> - <span id="c3-scoreB">0</span></div>
-    </div>
-  </div>
+  <h1>Pickleball Tournament Host Dashboard</h1>
+
+  <h2>Live Courts</h2>
+  <div class="grid-3" id="courtsContainer"></div>
+
+  <h2>Group Standings</h2>
+  <div class="tables-container" id="standingsContainer"></div>
+
+  <h2>Upcoming Match Queue</h2>
+  <div class="card" id="scheduleContainer"></div>
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
+    let currentData = null;
 
-    socket.on('initData', (data) => {
-      for (let i = 1; i <= 3; i++) {
-        if(data.courts[i]) {
-          document.getElementById(`c${i}-teams`).innerText = `${data.courts[i].teamA} vs ${data.courts[i].teamB}`;
-          document.getElementById(`c${i}-scoreA`).innerText = data.courts[i].scoreA;
-          document.getElementById(`c${i}-scoreB`).innerText = data.courts[i].scoreB;
-        }
-      }
-    });
-
+    socket.on('initData', renderAll);
+    socket.on('stateUpdated', renderAll);
     socket.on('scoreUpdated', ({ courtId, scoreA, scoreB }) => {
-      document.getElementById(`c${courtId}-scoreA`).innerText = scoreA;
-      document.getElementById(`c${courtId}-scoreB`).innerText = scoreB;
+      document.getElementById(`c${courtId}-score`).innerText = `${scoreA} - ${scoreB}`;
     });
+
+    function renderAll(data) {
+      if (!data) return;
+      const { tournament, activeCourts } = data;
+      currentData = data;
+
+      // Render Active Courts
+      let courtsHtml = '';
+      for (let i = 1; i <= 3; i++) {
+        const c = activeCourts[i];
+        courtsHtml += `
+          <div class="card">
+            <h3>Court ${i}</h3>
+            <div><strong>${c.teamA}</strong> vs <strong>${c.teamB}</strong></div>
+            <div class="score-display" id="c${i}-score">${c.scoreA} - ${c.scoreB}</div>
+            ${c.matchId ? `<button onclick="finishMatch(${i})" style="background:#ef4444;">End Match</button>` : '<em>Court Available</em>'}
+          </div>`;
+      }
+      document.getElementById('courtsContainer').innerHTML = courtsHtml;
+
+      // Render Standings Tables
+      let standingsHtml = '';
+      ['A', 'B', 'C'].forEach(g => {
+        standingsHtml += `
+          <div class="card">
+            <h3>Group ${g}</h3>
+            <table>
+              <tr><th>Pair</th><th>W</th><th>L</th><th>Diff</th></tr>
+              ${tournament.groups[g].map(p => `
+                <tr>
+                  <td><strong>${p.name}</strong></td>
+                  <td>${p.wins}</td>
+                  <td>${p.losses}</td>
+                  <td>${p.diff > 0 ? '+' + p.diff : p.diff}</td>
+                </tr>`).join('')}
+            </table>
+          </div>`;
+      });
+      document.getElementById('standingsContainer').innerHTML = standingsHtml;
+
+      // Render Match Queue
+      const upcoming = tournament.schedule.filter(m => m.status === 'UPCOMING');
+      let scheduleHtml = upcoming.length === 0 ? '<p>No upcoming matches left!</p>' : '';
+      
+      upcoming.slice(0, 10).forEach(m => {
+        scheduleHtml += `
+          <div class="match-item">
+            <span><strong>[Group ${m.group}]</strong> ${m.teamA} vs ${m.teamB}</span>
+            <div>
+              <select id="assign-court-${m.id}">
+                <option value="1">Court 1</option>
+                <option value="2">Court 2</option>
+                <option value="3">Court 3</option>
+              </select>
+              <button onclick="assignMatch(${m.id})">Send to Court</button>
+            </div>
+          </div>`;
+      });
+      document.getElementById('scheduleContainer').innerHTML = scheduleHtml;
+    }
+
+    function assignMatch(matchId) {
+      const courtId = parseInt(document.getElementById(`assign-court-${matchId}`).value);
+      socket.emit('assignMatch', { matchId, courtId });
+    }
+
+    function finishMatch(courtId) {
+      if (confirm(`Finish match on Court ${courtId}?`)) {
+        socket.emit('finishMatch', { courtId });
+      }
+    }
   </script>
 </body>
 </html>
