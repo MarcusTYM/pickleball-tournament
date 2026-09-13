@@ -2,7 +2,7 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
-const fs = require('fs');
+const { Redis } = require('@upstash/redis');
 
 const app = express();
 const server = http.createServer(app);
@@ -10,12 +10,24 @@ const io = new Server(server, { cors: { origin: "*" } });
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-const DATA_FILE = path.join(__dirname, 'tournament_data.json');
+// Initialize Upstash Redis client from environment variables
+const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL || '',
+  token: process.env.UPSTASH_REDIS_REST_TOKEN || ''
+});
 
-function saveData() {
-  fs.writeFileSync(DATA_FILE, JSON.stringify({ tournament, activeCourts }, null, 2));
+// Helper to save state to Redis
+async function saveData() {
+  try {
+    if (process.env.UPSTASH_REDIS_REST_URL) {
+      await redis.set('tournament_state', JSON.stringify({ tournament, activeCourts }));
+    }
+  } catch (err) {
+    console.error("Error saving to Redis:", err);
+  }
 }
 
+// Generate default structure
 function initializeTournament() {
   const groups = { A: [], B: [], C: [] };
   ['A', 'B', 'C'].forEach(g => {
@@ -49,66 +61,70 @@ function initializeTournament() {
   return { groups, schedule };
 }
 
-let tournament;
+let tournament = initializeTournament();
 let activeCourts = {
   1: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0 },
   2: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0 },
   3: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0 }
 };
 
-if (fs.existsSync(DATA_FILE)) {
+// Async initialization on startup from Redis
+async function loadInitialData() {
   try {
-    const saved = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
-    tournament = saved.tournament;
-    activeCourts = saved.activeCourts;
+    if (process.env.UPSTASH_REDIS_REST_URL) {
+      const saved = await redis.get('tournament_state');
+      if (saved) {
+        const parsed = typeof saved === 'string' ? JSON.parse(saved) : saved;
+        tournament = parsed.tournament;
+        activeCourts = parsed.activeCourts;
+        console.log("Successfully loaded state from Upstash Redis!");
+      } else {
+        await saveData();
+      }
+    }
   } catch (err) {
-    tournament = initializeTournament();
+    console.error("Failed to load from Redis, starting fresh:", err);
   }
-} else {
-  tournament = initializeTournament();
-  saveData();
 }
+loadInitialData();
 
 io.on('connection', (socket) => {
   socket.emit('initData', { tournament, activeCourts });
 
-  // Update Team Name Handler
-  socket.on('updateTeamName', ({ group, teamId, newName }) => {
+  socket.on('updateTeamName', async ({ group, teamId, newName }) => {
     const groupList = tournament.groups[group];
     const team = groupList.find(t => t.id === teamId);
     if (team) {
       const oldName = team.name;
       team.name = newName;
 
-      // Update name across all schedule matches
       tournament.schedule.forEach(m => {
         if (m.teamAId === teamId) m.teamA = newName;
         if (m.teamBId === teamId) m.teamB = newName;
       });
 
-      // Update name on active courts if currently playing
       for (let c = 1; c <= 3; c++) {
         if (activeCourts[c].teamA === oldName) activeCourts[c].teamA = newName;
         if (activeCourts[c].teamB === oldName) activeCourts[c].teamB = newName;
       }
 
-      saveData();
+      await saveData();
       io.emit('stateUpdated', { tournament, activeCourts });
     }
   });
 
-  socket.on('assignMatch', ({ matchId, courtId }) => {
+  socket.on('assignMatch', async ({ matchId, courtId }) => {
     const match = tournament.schedule.find(m => m.id === matchId);
     if (match && match.status === 'UPCOMING') {
       match.status = 'LIVE';
       match.court = courtId;
       activeCourts[courtId] = { matchId: match.id, teamA: match.teamA, teamB: match.teamB, scoreA: 0, scoreB: 0 };
-      saveData();
+      await saveData();
       io.emit('stateUpdated', { tournament, activeCourts });
     }
   });
 
-  socket.on('updateScore', ({ courtId, scoreA, scoreB }) => {
+  socket.on('updateScore', async ({ courtId, scoreA, scoreB }) => {
     if (activeCourts[courtId] && activeCourts[courtId].matchId) {
       activeCourts[courtId].scoreA = scoreA;
       activeCourts[courtId].scoreB = scoreB;
@@ -118,12 +134,12 @@ io.on('connection', (socket) => {
         match.scoreA = scoreA;
         match.scoreB = scoreB;
       }
-      saveData();
+      await saveData();
       io.emit('scoreUpdated', { courtId, scoreA, scoreB });
     }
   });
 
-  socket.on('finishMatch', ({ courtId }) => {
+  socket.on('finishMatch', async ({ courtId }) => {
     const court = activeCourts[courtId];
     if (!court || !court.matchId) return;
 
@@ -159,7 +175,7 @@ io.on('connection', (socket) => {
     }
 
     activeCourts[courtId] = { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0 };
-    saveData();
+    await saveData();
     io.emit('stateUpdated', { tournament, activeCourts });
   });
 });
