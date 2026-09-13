@@ -159,33 +159,38 @@
       document.getElementById('scheduleContainer').innerHTML = scheduleHtml;
     }
 
-    function generateKnockout() {
-      if (confirm("Generate Knockout Stage based on current standings?")) {
-        socket.emit('generateKnockout');
-      }
-    }
-
-    function resetTournament() {
-      if (confirm("⚠️ Are you sure you want to RESET EVERYTHING? All team names, scores, and knockout progress will be deleted!")) {
-        socket.emit('resetTournament');
-      }
-    }
-
+    // Safety Prompted Functions
     function saveTeamName(group, teamId) {
       const newName = document.getElementById(`input-${teamId}`).value.trim();
-      if (newName) {
+      if (!newName) return;
+      
+      if (confirm(`Update pair name to:\n\n"${newName}"?`)) {
         socket.emit('updateTeamName', { group, teamId, newName });
       }
     }
 
     function assignMatch(matchId) {
       const courtId = parseInt(document.getElementById(`assign-court-${matchId}`).value);
-      socket.emit('assignMatch', { matchId, courtId });
+      if (confirm(`Assign this match to Court ${courtId}?`)) {
+        socket.emit('assignMatch', { matchId, courtId });
+      }
     }
 
     function finishMatch(courtId) {
-      if (confirm(`Finish match on Court ${courtId}?`)) {
+      if (confirm(`Are you sure you want to FINISH and finalize scores for Court ${courtId}?`)) {
         socket.emit('finishMatch', { courtId });
+      }
+    }
+
+    function generateKnockout() {
+      if (confirm("Generate Knockout Stage based on current group standings?")) {
+        socket.emit('generateKnockout');
+      }
+    }
+
+    function resetTournament() {
+      if (confirm("⚠️ CRITICAL WARNING: Are you sure you want to RESET EVERYTHING?\n\nThis will wipe all scores, team names, and knockout stages!")) {
+        socket.emit('resetTournament');
       }
     }
   </script>
