@@ -87,7 +87,7 @@
       const upcoming = tournament.schedule.filter(m => m.status === 'UPCOMING');
       let scheduleHtml = upcoming.length === 0 ? '<p>No upcoming matches left!</p>' : '';
       
-      upcoming.slice(0, 50).forEach(m => {
+	upcoming.forEach((m, index) => {
         scheduleHtml += `
           <div class="match-item">
             <span><strong>[Group ${m.group}]</strong> ${m.teamA} vs ${m.teamB}</span>
