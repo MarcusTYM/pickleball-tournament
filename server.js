@@ -10,13 +10,11 @@ const io = new Server(server, { cors: { origin: "*" } });
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Initialize Upstash Redis client from environment variables
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL || '',
   token: process.env.UPSTASH_REDIS_REST_TOKEN || ''
 });
 
-// Helper to save state to Redis
 async function saveData() {
   try {
     if (process.env.UPSTASH_REDIS_REST_URL) {
@@ -27,7 +25,6 @@ async function saveData() {
   }
 }
 
-// Generate default structure
 function initializeTournament() {
   const groups = { A: [], B: [], C: [] };
   ['A', 'B', 'C'].forEach(g => {
@@ -52,13 +49,19 @@ function initializeTournament() {
           scoreA: 0,
           scoreB: 0,
           status: 'UPCOMING',
-          court: null
+          court: null,
+          type: 'GROUP'
         });
       }
     }
   });
 
-  return { groups, schedule };
+  const knockout = {
+    generated: false,
+    matches: []
+  };
+
+  return { groups, schedule, knockout };
 }
 
 let tournament = initializeTournament();
@@ -68,7 +71,6 @@ let activeCourts = {
   3: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0 }
 };
 
-// Async initialization on startup from Redis
 async function loadInitialData() {
   try {
     if (process.env.UPSTASH_REDIS_REST_URL) {
@@ -76,20 +78,81 @@ async function loadInitialData() {
       if (saved) {
         const parsed = typeof saved === 'string' ? JSON.parse(saved) : saved;
         tournament = parsed.tournament;
+        if (!tournament.knockout) tournament.knockout = { generated: false, matches: [] };
         activeCourts = parsed.activeCourts;
-        console.log("Successfully loaded state from Upstash Redis!");
+        console.log("Loaded state from Upstash Redis!");
       } else {
         await saveData();
       }
     }
   } catch (err) {
-    console.error("Failed to load from Redis, starting fresh:", err);
+    console.error("Failed to load Redis data:", err);
   }
 }
 loadInitialData();
 
 io.on('connection', (socket) => {
   socket.emit('initData', { tournament, activeCourts });
+
+  // Generate Knockout Stage
+  socket.on('generateKnockout', async () => {
+    const topA = tournament.groups.A[0];
+    const topB = tournament.groups.B[0];
+    const topC = tournament.groups.C[0];
+
+    const secondPlaces = [
+      tournament.groups.A[1],
+      tournament.groups.B[1],
+      tournament.groups.C[1]
+    ].filter(Boolean);
+
+    secondPlaces.sort((a, b) => b.wins - a.wins || b.diff - a.diff || b.pointsFor - a.pointsFor);
+    const wildcard = secondPlaces[0];
+
+    if (!topA || !topB || !topC || !wildcard) return;
+
+    tournament.knockout = {
+      generated: true,
+      matches: [
+        {
+          id: 101,
+          label: 'Semifinal 1',
+          teamA: topA.name,
+          teamB: wildcard.name,
+          scoreA: 0,
+          scoreB: 0,
+          status: 'UPCOMING',
+          court: null,
+          winner: null
+        },
+        {
+          id: 102,
+          label: 'Semifinal 2',
+          teamA: topB.name,
+          teamB: topC.name,
+          scoreA: 0,
+          scoreB: 0,
+          status: 'UPCOMING',
+          court: null,
+          winner: null
+        },
+        {
+          id: 103,
+          label: 'Championship Final',
+          teamA: 'Winner Semi 1',
+          teamB: 'Winner Semi 2',
+          scoreA: 0,
+          scoreB: 0,
+          status: 'WAITING',
+          court: null,
+          winner: null
+        }
+      ]
+    };
+
+    await saveData();
+    io.emit('stateUpdated', { tournament, activeCourts });
+  });
 
   socket.on('updateTeamName', async ({ group, teamId, newName }) => {
     const groupList = tournament.groups[group];
@@ -114,8 +177,12 @@ io.on('connection', (socket) => {
   });
 
   socket.on('assignMatch', async ({ matchId, courtId }) => {
-    const match = tournament.schedule.find(m => m.id === matchId);
-    if (match && match.status === 'UPCOMING') {
+    let match = tournament.schedule.find(m => m.id === matchId);
+    if (!match && tournament.knockout.generated) {
+      match = tournament.knockout.matches.find(m => m.id === matchId);
+    }
+
+    if (match && (match.status === 'UPCOMING' || match.status === 'READY')) {
       match.status = 'LIVE';
       match.court = courtId;
       activeCourts[courtId] = { matchId: match.id, teamA: match.teamA, teamB: match.teamB, scoreA: 0, scoreB: 0 };
@@ -129,7 +196,11 @@ io.on('connection', (socket) => {
       activeCourts[courtId].scoreA = scoreA;
       activeCourts[courtId].scoreB = scoreB;
       
-      const match = tournament.schedule.find(m => m.id === activeCourts[courtId].matchId);
+      let match = tournament.schedule.find(m => m.id === activeCourts[courtId].matchId);
+      if (!match && tournament.knockout.generated) {
+        match = tournament.knockout.matches.find(m => m.id === activeCourts[courtId].matchId);
+      }
+
       if (match) {
         match.scoreA = scoreA;
         match.scoreB = scoreB;
@@ -143,34 +214,55 @@ io.on('connection', (socket) => {
     const court = activeCourts[courtId];
     if (!court || !court.matchId) return;
 
-    const match = tournament.schedule.find(m => m.id === court.matchId);
+    let match = tournament.schedule.find(m => m.id === court.matchId);
+    let isKnockout = false;
+
+    if (!match && tournament.knockout.generated) {
+      match = tournament.knockout.matches.find(m => m.id === court.matchId);
+      isKnockout = true;
+    }
+
     if (match) {
       match.status = 'FINISHED';
       match.scoreA = court.scoreA;
       match.scoreB = court.scoreB;
 
-      const groupList = tournament.groups[match.group];
-      const tA = groupList.find(t => t.id === match.teamAId);
-      const tB = groupList.find(t => t.id === match.teamBId);
+      if (!isKnockout) {
+        const groupList = tournament.groups[match.group];
+        const tA = groupList.find(t => t.id === match.teamAId);
+        const tB = groupList.find(t => t.id === match.teamBId);
 
-      if (tA && tB) {
-        tA.pointsFor += court.scoreA;
-        tA.pointsAgainst += court.scoreB;
-        tB.pointsFor += court.scoreB;
-        tB.pointsAgainst += court.scoreA;
+        if (tA && tB) {
+          tA.pointsFor += court.scoreA;
+          tA.pointsAgainst += court.scoreB;
+          tB.pointsFor += court.scoreB;
+          tB.pointsAgainst += court.scoreA;
 
-        tA.diff = tA.pointsFor - tA.pointsAgainst;
-        tB.diff = tB.pointsFor - tB.pointsAgainst;
+          tA.diff = tA.pointsFor - tA.pointsAgainst;
+          tB.diff = tB.pointsFor - tB.pointsAgainst;
 
-        if (court.scoreA > court.scoreB) {
-          tA.wins += 1;
-          tB.losses += 1;
-        } else {
-          tB.wins += 1;
-          tA.losses += 1;
+          if (court.scoreA > court.scoreB) {
+            tA.wins += 1;
+            tB.losses += 1;
+          } else {
+            tB.wins += 1;
+            tA.losses += 1;
+          }
+
+          groupList.sort((a, b) => b.wins - a.wins || b.diff - a.diff);
         }
+      } else {
+        match.winner = court.scoreA > court.scoreB ? match.teamA : match.teamB;
+        
+        const semi1 = tournament.knockout.matches.find(m => m.id === 101);
+        const semi2 = tournament.knockout.matches.find(m => m.id === 102);
+        const finalMatch = tournament.knockout.matches.find(m => m.id === 103);
 
-        groupList.sort((a, b) => b.wins - a.wins || b.diff - a.diff);
+        if (semi1.winner) finalMatch.teamA = semi1.winner;
+        if (semi2.winner) finalMatch.teamB = semi2.winner;
+        if (semi1.winner && semi2.winner && finalMatch.status === 'WAITING') {
+          finalMatch.status = 'UPCOMING';
+        }
       }
     }
 

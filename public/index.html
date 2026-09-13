@@ -15,23 +15,14 @@
     th, td { border-bottom: 1px solid #e2e8f0; padding: 8px 10px; text-align: left; font-size: 14px; vertical-align: middle; }
     th { background: #0284c7; color: white; }
     tr:nth-child(even) { background: #f8fafc; }
-    .match-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; }
+    .match-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }
     button { background: #0284c7; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
     button:hover { background: #0369a1; }
     select { padding: 5px; border: 1px solid #cbd5e1; border-radius: 4px; }
-    /* Multiline textarea styling */
-    .team-edit-textarea { 
-      width: 120px; 
-      height: 42px; 
-      font-size: 13px; 
-      font-family: inherit; 
-      resize: vertical; 
-      border: 1px solid #cbd5e1; 
-      border-radius: 4px;
-      padding: 4px;
-    }
-    /* Render multi-line text formatting */
+    .team-edit-textarea { width: 120px; height: 42px; font-size: 13px; font-family: inherit; resize: vertical; border: 1px solid #cbd5e1; border-radius: 4px; padding: 4px; }
     .multiline-name { white-space: pre-line; display: inline-block; }
+    .btn-green { background: #16a34a; font-size: 16px; padding: 10px 20px; }
+    .btn-green:hover { background: #15803d; }
   </style>
 </head>
 <body>
@@ -40,10 +31,18 @@
   <h2>Live Courts</h2>
   <div class="grid-3" id="courtsContainer"></div>
 
+  <h2>Knockout Stage (Semifinals & Finals)</h2>
+  <div class="card" style="margin-bottom: 25px;">
+    <div id="knockoutActionContainer">
+      <button class="btn-green" onclick="generateKnockout()">🏆 Generate Knockout Bracket</button>
+    </div>
+    <div id="knockoutMatchesContainer" style="margin-top: 15px;"></div>
+  </div>
+
   <h2>Group Standings & Edit Teams</h2>
   <div class="tables-container" id="standingsContainer"></div>
 
-  <h2>Upcoming Match Queue</h2>
+  <h2>Upcoming Round-Robin Queue</h2>
   <div class="card" id="scheduleContainer"></div>
 
   <script src="/socket.io/socket.io.js"></script>
@@ -60,7 +59,7 @@
       if (!data) return;
       const { tournament, activeCourts } = data;
 
-      // Render Active Courts
+      // Render Courts
       let courtsHtml = '';
       for (let i = 1; i <= 3; i++) {
         const c = activeCourts[i];
@@ -76,7 +75,36 @@
       }
       document.getElementById('courtsContainer').innerHTML = courtsHtml;
 
-      // Render Standings Tables with Multiline Textarea
+      // Render Knockout Bracket
+      if (tournament.knockout && tournament.knockout.generated) {
+        document.getElementById('knockoutActionContainer').innerHTML = '<strong>Status:</strong> Knockout Stage Active!';
+        let koHtml = '';
+        tournament.knockout.matches.forEach(m => {
+          koHtml += `
+            <div class="match-item">
+              <span>
+                <strong>${m.label}:</strong> 
+                <span class="multiline-name">${m.teamA}</span> vs <span class="multiline-name">${m.teamB}</span>
+                ${m.winner ? `<strong style="color:#16a34a; margin-left:10px;">(Winner: ${m.winner})</strong>` : ''}
+              </span>
+              <div>
+                ${(m.status === 'UPCOMING' || m.status === 'READY') ? `
+                  <select id="assign-court-${m.id}">
+                    <option value="1">Court 1</option>
+                    <option value="2">Court 2</option>
+                    <option value="3">Court 3</option>
+                  </select>
+                  <button onclick="assignMatch(${m.id})">Send to Court</button>
+                ` : `<em>Status: ${m.status}</em>`}
+              </div>
+            </div>`;
+        });
+        document.getElementById('knockoutMatchesContainer').innerHTML = koHtml;
+      } else {
+        document.getElementById('knockoutMatchesContainer').innerHTML = '<p>Click the button above once round-robin standings are finalized to generate Semifinals!</p>';
+      }
+
+      // Render Standings
       let standingsHtml = '';
       ['A', 'B', 'C'].forEach(g => {
         standingsHtml += `
@@ -101,9 +129,9 @@
       });
       document.getElementById('standingsContainer').innerHTML = standingsHtml;
 
-      // Render Match Queue
+      // Render Round Robin Queue
       const upcoming = tournament.schedule.filter(m => m.status === 'UPCOMING');
-      let scheduleHtml = upcoming.length === 0 ? '<p>No upcoming matches left!</p>' : '';
+      let scheduleHtml = upcoming.length === 0 ? '<p>No upcoming group matches left!</p>' : '';
       
       upcoming.forEach((m, index) => {
         scheduleHtml += `
@@ -123,6 +151,12 @@
           </div>`;
       });
       document.getElementById('scheduleContainer').innerHTML = scheduleHtml;
+    }
+
+    function generateKnockout() {
+      if (confirm("Generate Knockout Stage based on current standings?")) {
+        socket.emit('generateKnockout');
+      }
     }
 
     function saveTeamName(group, teamId) {
