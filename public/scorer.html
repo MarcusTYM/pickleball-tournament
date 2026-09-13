@@ -35,7 +35,31 @@
     .brand-logo { height: 32px; object-fit: contain; }
 
     h1 { color: var(--dark-slate); font-size: 20px; margin: 0; }
-    h2 { color: var(--primary-red); font-size: 16px; margin: 5px 0 15px 0; font-weight: 700; }
+    h2 { color: var(--primary-red); font-size: 16px; margin: 5px 0 10px 0; font-weight: 700; }
+
+    .court-selector {
+      background: white;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    select { padding: 8px; font-size: 16px; border-radius: 6px; border: 1px solid #cbd5e1; width: 100%; }
+
+    .btn-swap {
+      background: #475569;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-bottom: 15px;
+      width: 100%;
+      touch-action: manipulation;
+    }
+    .btn-swap:active { background: #334155; transform: scale(0.98); }
 
     .score-container {
       display: grid;
@@ -102,15 +126,6 @@
       touch-action: manipulation;
     }
     .btn-minus:active { background: #cbd5e1; }
-
-    .court-selector {
-      background: white;
-      padding: 15px;
-      border-radius: 8px;
-      margin-bottom: 15px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    }
-    select { padding: 8px; font-size: 16px; border-radius: 6px; border: 1px solid #cbd5e1; width: 100%; }
   </style>
 </head>
 <body>
@@ -131,15 +146,19 @@
 
   <h2 id="courtTitle">Court 1 - Live Match</h2>
 
-  <div class="score-container">
-    <div class="team-box">
+  <button class="btn-swap" onclick="toggleFlipSides()">↔️ Swap Sides (Left / Right)</button>
+
+  <div class="score-container" id="scoreContainer">
+    <!-- Team A Box -->
+    <div class="team-box" id="boxA">
       <div class="team-name" id="teamAName">Team A</div>
       <div class="score-num" id="scoreA">0</div>
       <button class="btn-score" onclick="adjustScore('A', 1)">+1</button>
       <button class="btn-minus" onclick="adjustScore('A', -1)">-1</button>
     </div>
 
-    <div class="team-box">
+    <!-- Team B Box -->
+    <div class="team-box" id="boxB">
       <div class="team-name" id="teamBName">Team B</div>
       <div class="score-num" id="scoreB">0</div>
       <button class="btn-score" onclick="adjustScore('B', 1)">+1</button>
@@ -156,6 +175,7 @@
 
     let currentScoreA = 0;
     let currentScoreB = 0;
+    let isFlipped = false;
 
     socket.on('initData', updateView);
     socket.on('stateUpdated', updateView);
@@ -172,6 +192,22 @@
       courtId = parseInt(document.getElementById('courtSelect').value);
       window.history.replaceState(null, null, `?court=${courtId}`);
       socket.emit('initData');
+    }
+
+    function toggleFlipSides() {
+      isFlipped = !isFlipped;
+      const container = document.getElementById('scoreContainer');
+      const boxA = document.getElementById('boxA');
+      const boxB = document.getElementById('boxB');
+      
+      container.innerHTML = '';
+      if (isFlipped) {
+        container.appendChild(boxB);
+        container.appendChild(boxA);
+      } else {
+        container.appendChild(boxA);
+        container.appendChild(boxB);
+      }
     }
 
     function updateView(data) {
