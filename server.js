@@ -10,11 +10,13 @@ const io = new Server(server, { cors: { origin: "*" } });
 
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Initialize Upstash Redis client
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL || '',
   token: process.env.UPSTASH_REDIS_REST_TOKEN || ''
 });
 
+// Helper to save state to Redis
 async function saveData() {
   try {
     if (process.env.UPSTASH_REDIS_REST_URL) {
@@ -25,6 +27,7 @@ async function saveData() {
   }
 }
 
+// Helper to build initial tournament state
 function initializeTournament() {
   const groups = { A: [], B: [], C: [] };
   ['A', 'B', 'C'].forEach(g => {
@@ -71,6 +74,7 @@ let activeCourts = {
   3: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0 }
 };
 
+// Async initialization on startup from Redis
 async function loadInitialData() {
   try {
     if (process.env.UPSTASH_REDIS_REST_URL) {
@@ -154,6 +158,19 @@ io.on('connection', (socket) => {
     io.emit('stateUpdated', { tournament, activeCourts });
   });
 
+  // Reset Tournament
+  socket.on('resetTournament', async () => {
+    tournament = initializeTournament();
+    activeCourts = {
+      1: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0 },
+      2: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0 },
+      3: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0 }
+    };
+    await saveData();
+    io.emit('stateUpdated', { tournament, activeCourts });
+  });
+
+  // Update Team Name Handler
   socket.on('updateTeamName', async ({ group, teamId, newName }) => {
     const groupList = tournament.groups[group];
     const team = groupList.find(t => t.id === teamId);
@@ -176,6 +193,7 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Assign Match to Court
   socket.on('assignMatch', async ({ matchId, courtId }) => {
     let match = tournament.schedule.find(m => m.id === matchId);
     if (!match && tournament.knockout.generated) {
@@ -191,6 +209,7 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Update Score Handler
   socket.on('updateScore', async ({ courtId, scoreA, scoreB }) => {
     if (activeCourts[courtId] && activeCourts[courtId].matchId) {
       activeCourts[courtId].scoreA = scoreA;
@@ -210,6 +229,7 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Finish Match Handler
   socket.on('finishMatch', async ({ courtId }) => {
     const court = activeCourts[courtId];
     if (!court || !court.matchId) return;
