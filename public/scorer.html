@@ -25,7 +25,7 @@
       background: white;
       padding: 10px;
       border-radius: 8px;
-      margin-bottom: 15px;
+      margin-bottom: 12px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.05);
       display: flex;
       align-items: center;
@@ -46,20 +46,76 @@
     }
     select { padding: 8px; font-size: 16px; border-radius: 6px; border: 1px solid #cbd5e1; width: 100%; }
 
-    .btn-swap {
+    .action-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    .btn-action {
       background: #475569;
       color: white;
       border: none;
-      padding: 10px 16px;
+      padding: 10px 8px;
       border-radius: 6px;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: bold;
       cursor: pointer;
-      margin-bottom: 15px;
-      width: 100%;
       touch-action: manipulation;
     }
-    .btn-swap:active { background: #334155; transform: scale(0.98); }
+    .btn-action:active { background: #334155; transform: scale(0.98); }
+    .btn-toss { background: #0284c7; }
+    .btn-toss:active { background: #0369a1; }
+
+    /* Coin Toss Overlay Modal */
+    .toss-modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 23, 42, 0.85);
+      z-index: 999;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      padding: 20px;
+    }
+
+    .toss-card {
+      background: white;
+      padding: 24px;
+      border-radius: 12px;
+      width: 85%;
+      max-width: 320px;
+      text-align: center;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+
+    .coin {
+      width: 90px;
+      height: 90px;
+      margin: 20px auto;
+      border-radius: 50%;
+      background: #f59e0b;
+      border: 4px solid #d97706;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: 800;
+      color: white;
+      box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
+    }
+
+    .spinning {
+      animation: spin 0.2s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotateY(0deg); }
+      50% { transform: rotateY(180deg); }
+      100% { transform: rotateY(360deg); }
+    }
 
     .score-container {
       display: grid;
@@ -146,7 +202,10 @@
 
   <h2 id="courtTitle">Court 1 - Live Match</h2>
 
-  <button class="btn-swap" onclick="toggleFlipSides()">↔️ Swap Sides (Left / Right)</button>
+  <div class="action-grid">
+    <button class="btn-action btn-toss" onclick="openCoinToss()">🪙 Coin Toss</button>
+    <button class="btn-action" onclick="toggleFlipSides()">↔️ Swap Sides</button>
+  </div>
 
   <div class="score-container" id="scoreContainer">
     <!-- Team A Box -->
@@ -166,6 +225,19 @@
     </div>
   </div>
 
+  <!-- Coin Toss Modal Overlay -->
+  <div class="toss-modal" id="tossModal">
+    <div class="toss-card">
+      <h3 style="margin: 0; color: var(--dark-slate);">Pre-Match Toss</h3>
+      <p id="tossStatus" style="font-size: 13px; color: #64748b; margin: 6px 0 0 0;">Tap Flip to decide Serve / Side</p>
+
+      <div class="coin" id="coinElem">?</div>
+
+      <button id="btnFlip" class="btn-score" style="font-size: 16px; padding: 12px 0;" onclick="startCoinSpin()">Flip Coin (5s)</button>
+      <button id="btnCloseToss" class="btn-minus" style="margin-top: 10px;" onclick="closeCoinToss()">Close</button>
+    </div>
+  </div>
+
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
@@ -176,6 +248,7 @@
     let currentScoreA = 0;
     let currentScoreB = 0;
     let isFlipped = false;
+    let isSpinning = false;
 
     socket.on('initData', updateView);
     socket.on('stateUpdated', updateView);
@@ -208,6 +281,44 @@
         container.appendChild(boxA);
         container.appendChild(boxB);
       }
+    }
+
+    /* Coin Toss Logic */
+    function openCoinToss() {
+      document.getElementById('tossModal').style.display = 'flex';
+      document.getElementById('coinElem').innerText = '?';
+      document.getElementById('tossStatus').innerText = 'Tap Flip to decide Serve / Side';
+      document.getElementById('btnFlip').disabled = false;
+    }
+
+    function closeCoinToss() {
+      if (isSpinning) return;
+      document.getElementById('tossModal').style.display = 'none';
+    }
+
+    function startCoinSpin() {
+      if (isSpinning) return;
+      isSpinning = true;
+
+      const coin = document.getElementById('coinElem');
+      const status = document.getElementById('tossStatus');
+      const btnFlip = document.getElementById('btnFlip');
+
+      btnFlip.disabled = true;
+      status.innerText = 'Flipping... 5 seconds';
+      coin.classList.add('spinning');
+
+      // Randomly pick result ahead of time
+      const result = Math.random() < 0.5 ? 'HEAD' : 'TAIL';
+
+      // 5 Seconds Spin Countdown
+      setTimeout(() => {
+        coin.classList.remove('spinning');
+        coin.innerText = result;
+        status.innerText = `Result: ${result}! Winner chooses Side or Serve.`;
+        isSpinning = false;
+        btnFlip.disabled = false;
+      }, 5000);
     }
 
     function updateView(data) {
