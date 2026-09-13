@@ -16,7 +16,41 @@
     th, td { border-bottom: 1px solid #e2e8f0; padding: 8px 10px; text-align: left; font-size: 14px; vertical-align: middle; }
     th { background: #0284c7; color: white; }
     tr:nth-child(even) { background: #f8fafc; }
-    .match-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }
+    
+    /* Container padding adjustment for queue card */
+    #scheduleContainer, #knockoutMatchesContainer {
+      padding: 0;
+      overflow: hidden;
+    }
+
+    /* Match item zebra striping & hover effects */
+    .match-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      border-bottom: 1px solid #e2e8f0;
+      transition: background-color 0.15s ease-in-out;
+    }
+
+    /* Alternating row colors */
+    .match-item:nth-child(even) {
+      background-color: #f8fafc;
+    }
+
+    .match-item:nth-child(odd) {
+      background-color: #ffffff;
+    }
+
+    /* Soft blue hover highlight effect */
+    .match-item:hover {
+      background-color: #e0f2fe !important;
+    }
+
+    .match-item:last-child {
+      border-bottom: none;
+    }
+
     button { background: #0284c7; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
     button:hover { background: #0369a1; }
     select, input { padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 14px; }
@@ -142,7 +176,7 @@
         });
         document.getElementById('knockoutMatchesContainer').innerHTML = koHtml;
       } else {
-        document.getElementById('knockoutMatchesContainer').innerHTML = '<p>Click the button above once round-robin standings are finalized to generate Semifinals!</p>';
+        document.getElementById('knockoutMatchesContainer').innerHTML = '<p style="padding: 15px;">Click the button above once round-robin standings are finalized to generate Semifinals!</p>';
       }
 
       // Render Standings
@@ -172,7 +206,7 @@
 
       // Render Schedule
       const upcoming = tournament.schedule.filter(m => m.status === 'UPCOMING');
-      let scheduleHtml = upcoming.length === 0 ? '<p>No upcoming group matches left!</p>' : '';
+      let scheduleHtml = upcoming.length === 0 ? '<p style="padding: 15px;">No upcoming group matches left!</p>' : '';
       upcoming.forEach((m, index) => {
         scheduleHtml += `
           <div class="match-item">
