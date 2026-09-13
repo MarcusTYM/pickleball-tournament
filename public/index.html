@@ -11,7 +11,7 @@
     .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; margin-bottom: 25px; }
     .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.08); }
     .score-display { font-size: 36px; font-weight: bold; color: #0284c7; margin: 10px 0; }
-    .tables-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 15px; margin-bottom: 25px; }
+    .tables-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; margin-bottom: 25px; }
     table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; border-radius: 8px; overflow: hidden; }
     th, td { border-bottom: 1px solid #e2e8f0; padding: 8px 10px; text-align: left; font-size: 14px; vertical-align: middle; }
     th { background: #0284c7; color: white; }
@@ -19,37 +19,54 @@
     .match-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }
     button { background: #0284c7; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
     button:hover { background: #0369a1; }
-    select { padding: 5px; border: 1px solid #cbd5e1; border-radius: 4px; }
+    select, input { padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 14px; }
     .team-edit-textarea { width: 120px; height: 42px; font-size: 13px; font-family: inherit; resize: vertical; border: 1px solid #cbd5e1; border-radius: 4px; padding: 4px; }
     .multiline-name { white-space: pre-line; display: inline-block; }
     .btn-green { background: #16a34a; font-size: 16px; padding: 10px 20px; }
     .btn-green:hover { background: #15803d; }
     .btn-red { background: #dc2626; font-weight: bold; padding: 8px 16px; }
     .btn-red:hover { background: #b91c1c; }
+    .setup-box { max-width: 400px; margin: 40px auto; text-align: center; }
   </style>
 </head>
 <body>
-  <div class="header-bar">
-    <h1>Pickleball Tournament Host Dashboard</h1>
-    <button class="btn-red" onclick="resetTournament()">🔄 Reset Entire Tournament</button>
-  </div>
-
-  <h2>Live Courts</h2>
-  <div class="grid-3" id="courtsContainer"></div>
-
-  <h2>Knockout Stage (Semifinals & Finals)</h2>
-  <div class="card" style="margin-bottom: 25px;">
-    <div id="knockoutActionContainer">
-      <button class="btn-green" onclick="generateKnockout()">🏆 Generate Knockout Bracket</button>
+  <div id="setupScreen" class="card setup-box" style="display: none;">
+    <h2>🎾 Tournament Setup</h2>
+    <p>Configure your event parameters:</p>
+    <div style="margin-bottom: 15px; text-align: left;">
+      <label><strong>Total Number of Pairs:</strong></label><br>
+      <input type="number" id="numTeams" value="20" min="4" max="60" style="width: 93%;">
     </div>
-    <div id="knockoutMatchesContainer" style="margin-top: 15px;"></div>
+    <div style="margin-bottom: 20px; text-align: left;">
+      <label><strong>Number of Groups:</strong></label><br>
+      <input type="number" id="numGroups" value="4" min="2" max="6" style="width: 93%;">
+    </div>
+    <button class="btn-green" style="width: 100%;" onclick="startTournament()">Start Tournament</button>
   </div>
 
-  <h2>Group Standings & Edit Teams</h2>
-  <div class="tables-container" id="standingsContainer"></div>
+  <div id="dashboardScreen" style="display: none;">
+    <div class="header-bar">
+      <h1>Pickleball Tournament Host Dashboard</h1>
+      <button class="btn-red" onclick="resetTournament()">🔄 Reset Entire Tournament</button>
+    </div>
 
-  <h2>Upcoming Round-Robin Queue</h2>
-  <div class="card" id="scheduleContainer"></div>
+    <h2>Live Courts</h2>
+    <div class="grid-3" id="courtsContainer"></div>
+
+    <h2>Knockout Stage (Semifinals & Finals)</h2>
+    <div class="card" style="margin-bottom: 25px;">
+      <div id="knockoutActionContainer">
+        <button class="btn-green" onclick="generateKnockout()">🏆 Generate Knockout Bracket</button>
+      </div>
+      <div id="knockoutMatchesContainer" style="margin-top: 15px;"></div>
+    </div>
+
+    <h2>Group Standings & Edit Teams</h2>
+    <div class="tables-container" id="standingsContainer"></div>
+
+    <h2>Upcoming Round-Robin Queue</h2>
+    <div class="card" id="scheduleContainer"></div>
+  </div>
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
@@ -58,12 +75,30 @@
     socket.on('initData', renderAll);
     socket.on('stateUpdated', renderAll);
     socket.on('scoreUpdated', ({ courtId, scoreA, scoreB }) => {
-      document.getElementById(`c${courtId}-score`).innerText = `${scoreA} - ${scoreB}`;
+      const el = document.getElementById(`c${courtId}-score`);
+      if (el) el.innerText = `${scoreA} - ${scoreB}`;
     });
+
+    function startTournament() {
+      const numTeams = parseInt(document.getElementById('numTeams').value);
+      const numGroups = parseInt(document.getElementById('numGroups').value);
+      if (confirm(`Create tournament with ${numTeams} Pairs divided across ${numGroups} Groups?`)) {
+        socket.emit('setupTournament', { numTeams, numGroups });
+      }
+    }
 
     function renderAll(data) {
       if (!data) return;
       const { tournament, activeCourts } = data;
+
+      if (!tournament || !tournament.initialized) {
+        document.getElementById('setupScreen').style.display = 'block';
+        document.getElementById('dashboardScreen').style.display = 'none';
+        return;
+      }
+
+      document.getElementById('setupScreen').style.display = 'none';
+      document.getElementById('dashboardScreen').style.display = 'block';
 
       // Render Courts
       let courtsHtml = '';
@@ -112,7 +147,7 @@
 
       // Render Standings
       let standingsHtml = '';
-      ['A', 'B', 'C'].forEach(g => {
+      Object.keys(tournament.groups).forEach(g => {
         standingsHtml += `
           <div class="card">
             <h3>Group ${g}</h3>
@@ -135,10 +170,9 @@
       });
       document.getElementById('standingsContainer').innerHTML = standingsHtml;
 
-      // Render Round Robin Queue
+      // Render Schedule
       const upcoming = tournament.schedule.filter(m => m.status === 'UPCOMING');
       let scheduleHtml = upcoming.length === 0 ? '<p>No upcoming group matches left!</p>' : '';
-      
       upcoming.forEach((m, index) => {
         scheduleHtml += `
           <div class="match-item">
@@ -159,12 +193,9 @@
       document.getElementById('scheduleContainer').innerHTML = scheduleHtml;
     }
 
-    // Safety Prompted Functions
     function saveTeamName(group, teamId) {
       const newName = document.getElementById(`input-${teamId}`).value.trim();
-      if (!newName) return;
-      
-      if (confirm(`Update pair name to:\n\n"${newName}"?`)) {
+      if (newName && confirm(`Update pair name to:\n\n"${newName}"?`)) {
         socket.emit('updateTeamName', { group, teamId, newName });
       }
     }
@@ -189,7 +220,7 @@
     }
 
     function resetTournament() {
-      if (confirm("⚠️ CRITICAL WARNING: Are you sure you want to RESET EVERYTHING?\n\nThis will wipe all scores, team names, and knockout stages!")) {
+      if (confirm("⚠️ CRITICAL WARNING: Are you sure you want to RESET EVERYTHING?\n\nThis will return to the setup screen!")) {
         socket.emit('resetTournament');
       }
     }
