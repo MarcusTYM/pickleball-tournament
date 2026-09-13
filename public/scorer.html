@@ -108,7 +108,7 @@
     }
 
     .spinning {
-      animation: spin 0.2s linear infinite;
+      animation: spin 0.15s linear infinite;
     }
 
     @keyframes spin {
@@ -233,7 +233,7 @@
 
       <div class="coin" id="coinElem">?</div>
 
-      <button id="btnFlip" class="btn-score" style="font-size: 16px; padding: 12px 0;" onclick="startCoinSpin()">Flip Coin (5s)</button>
+      <button id="btnFlip" class="btn-score" style="font-size: 16px; padding: 12px 0;" onclick="startCoinSpin()">Flip Coin</button>
       <button id="btnCloseToss" class="btn-minus" style="margin-top: 10px;" onclick="closeCoinToss()">Close</button>
     </div>
   </div>
@@ -305,20 +305,19 @@
       const btnFlip = document.getElementById('btnFlip');
 
       btnFlip.disabled = true;
-      status.innerText = 'Flipping... 5 seconds';
+      status.innerText = 'Flipping...';
       coin.classList.add('spinning');
 
-      // Randomly pick result ahead of time
       const result = Math.random() < 0.5 ? 'HEAD' : 'TAIL';
 
-      // 5 Seconds Spin Countdown
+      // 2 Seconds Spin Countdown
       setTimeout(() => {
         coin.classList.remove('spinning');
         coin.innerText = result;
         status.innerText = `Result: ${result}! Winner chooses Side or Serve.`;
         isSpinning = false;
         btnFlip.disabled = false;
-      }, 5000);
+      }, 2000);
     }
 
     function updateView(data) {
