@@ -58,7 +58,8 @@
       border: 1px solid var(--border-color);
       border-top: 4px solid var(--primary-red);
     }
-    .court-label { color: #94a3b8; font-size: 14px; font-weight: 700; text-transform: uppercase; margin-bottom: 12px; }
+    .court-label { color: #94a3b8; font-size: 14px; font-weight: 700; text-transform: uppercase; margin-bottom: 8px; }
+    .timer-badge { font-size: 13px; font-weight: 700; color: #38bdf8; background: #0f172a; padding: 3px 10px; border-radius: 12px; display: inline-block; margin-bottom: 10px; border: 1px solid var(--border-color); }
     .score-display { font-size: 52px; font-weight: 800; color: #ef4444; margin: 12px 0; font-variant-numeric: tabular-nums; }
     
     .tables-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; }
@@ -119,6 +120,7 @@
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
+    let currentCourts = {};
 
     socket.on('initData', renderAll);
     socket.on('stateUpdated', renderAll);
@@ -127,19 +129,36 @@
       if (el) el.innerText = `${scoreA} - ${scoreB}`;
     });
 
+    setInterval(() => {
+      for (let i = 1; i <= 3; i++) {
+        const c = currentCourts[i];
+        if (c && c.matchId && c.startedAt) {
+          const timerEl = document.getElementById(`c${i}-timer`);
+          if (timerEl) {
+            const elapsed = Math.floor((Date.now() - c.startedAt) / 1000);
+            const mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
+            const secs = String(elapsed % 60).padStart(2, '0');
+            timerEl.innerText = `⏱ ${mins}:${secs}`;
+          }
+        }
+      }
+    }, 1000);
+
     function renderAll(data) {
       if (!data) return;
       const { tournament, activeCourts } = data;
+      currentCourts = activeCourts || {};
 
       // Render Courts
       let courtsHtml = '';
       for (let i = 1; i <= 3; i++) {
-        const c = activeCourts[i];
+        const c = currentCourts[i];
         if (!c) continue;
         courtsHtml += `
           <div class="court-card">
             <div class="court-label">Court ${i}</div>
             ${c.matchId ? `
+              <div class="timer-badge" id="c${i}-timer">⏱ 00:00</div>
               <div>
                 <span class="multiline-name">${c.teamA}</span>
                 <div style="color: #64748b; font-size: 13px; margin: 4px 0; font-weight: bold;">VS</div>
@@ -180,6 +199,7 @@
                 <span class="multiline-name">${m.teamA}</span> vs <span class="multiline-name">${m.teamB}</span>
               </span>
               <span>
+                ${m.duration ? `<span style="color: #38bdf8; font-size: 12px; margin-right: 10px;">⏱ ${m.duration}</span>` : ''}
                 ${m.winner ? `<strong style="color: #22c55e;">Winner: ${m.winner}</strong>` : `<em style="color: #94a3b8; font-size: 13px;">${m.status}</em>`}
               </span>
             </div>`;

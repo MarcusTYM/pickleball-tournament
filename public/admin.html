@@ -67,6 +67,13 @@
       background: #162032;
       margin-bottom: 15px;
     }
+
+    .timer-text {
+      color: #38bdf8;
+      font-weight: bold;
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
   </style>
 </head>
 <body>
@@ -136,9 +143,25 @@
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
+    let currentCourts = {};
 
     socket.on('initData', renderAll);
     socket.on('stateUpdated', renderAll);
+
+    setInterval(() => {
+      for (let i = 1; i <= 3; i++) {
+        const c = currentCourts[i];
+        if (c && c.matchId && c.startedAt) {
+          const timerEl = document.getElementById(`admin-c${i}-timer`);
+          if (timerEl) {
+            const elapsed = Math.floor((Date.now() - c.startedAt) / 1000);
+            const mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
+            const secs = String(elapsed % 60).padStart(2, '0');
+            timerEl.innerText = `Elapsed Time: ${mins}:${secs}`;
+          }
+        }
+      }
+    }, 1000);
 
     function setupTournament() {
       const numTeams = document.getElementById('numTeams').value;
@@ -186,15 +209,17 @@
     function renderAll(data) {
       if (!data) return;
       const { tournament, activeCourts } = data;
+      currentCourts = activeCourts || {};
 
       // Render Court Controls
       for (let i = 1; i <= 3; i++) {
-        const c = activeCourts[i];
+        const c = currentCourts[i];
         const container = document.getElementById(`court${i}Control`);
         if (c && container) {
           container.innerHTML = `
-            <h3 style="color: #f87171; margin-bottom: 8px;">Court ${i}</h3>
+            <h3 style="color: #f87171; margin-bottom: 4px;">Court ${i}</h3>
             ${c.matchId ? `
+              <div class="timer-text" id="admin-c${i}-timer">Elapsed Time: 00:00</div>
               <div style="font-size: 14px; margin-bottom: 10px;">
                 <strong>${c.teamA}</strong> vs <strong>${c.teamB}</strong>
               </div>
