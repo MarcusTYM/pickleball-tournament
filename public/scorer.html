@@ -167,6 +167,40 @@
       cursor: pointer;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
+
+    /* Modal Styling */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(15, 23, 42, 0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      display: none;
+    }
+    .modal-card {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      text-align: center;
+      max-width: 320px;
+      width: 100%;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    }
+    .coin-icon {
+      font-size: 60px;
+      margin-bottom: 15px;
+      display: inline-block;
+      animation: bounce 0.5s infinite alternate;
+    }
+    @keyframes bounce {
+      from { transform: translateY(0); }
+      to { transform: translateY(-10px); }
+    }
+    .modal-title { font-size: 22px; font-weight: 800; color: #0f172a; margin: 0 0 10px 0; }
+    .modal-result { font-size: 18px; font-weight: bold; color: #0284c7; min-height: 28px; margin-bottom: 20px; }
+    .modal-btn { background: #0f172a; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; display: none; width: 100%; }
   </style>
 </head>
 <body>
@@ -209,6 +243,16 @@
   </div>
 
   <button class="btn-finish" onclick="finishMatch()">🏁 Finish Match & Submit Score</button>
+
+  <!-- Coin Toss Modal -->
+  <div class="modal-overlay" id="coinModal">
+    <div class="modal-card">
+      <div class="coin-icon" id="coinIcon">🪙</div>
+      <div class="modal-title">Coin Toss</div>
+      <div class="modal-result" id="modalResultText">Flipping coin...</div>
+      <button class="modal-btn" id="modalCloseBtn" onclick="closeCoinModal()">OK</button>
+    </div>
+  </div>
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
@@ -265,7 +309,6 @@
       let scoreA = c.scoreA;
       let scoreB = c.scoreB;
 
-      // Account for visually swapped sides
       const targetTeam = isSwapped ? (position === 'A' ? 'B' : 'A') : position;
 
       if (targetTeam === 'A') scoreA = Math.max(0, scoreA + delta);
@@ -280,8 +323,36 @@
     }
 
     function coinToss() {
-      const winner = Math.random() < 0.5 ? 'Team Left' : 'Team Right';
-      alert(`Coin Toss Result: ${winner} serves first / chooses side!`);
+      const c = currentCourts[selectedCourt];
+      const teamA = c && c.matchId ? c.teamA : 'Team A';
+      const teamB = c && c.matchId ? c.teamB : 'Team B';
+
+      const modal = document.getElementById('coinModal');
+      const resultText = document.getElementById('modalResultText');
+      const closeBtn = document.getElementById('modalCloseBtn');
+      const coinIcon = document.getElementById('coinIcon');
+
+      modal.style.display = 'flex';
+      closeBtn.style.display = 'none';
+      resultText.innerText = 'Flipping coin... (Heads / Tails)';
+
+      let counter = 0;
+      const spinInterval = setInterval(() => {
+        coinIcon.style.transform = `rotateY(${counter * 180}deg)`;
+        resultText.innerText = counter % 2 === 0 ? '✨ Heads ✨' : '✨ Tails ✨';
+        counter++;
+      }, 250);
+
+      setTimeout(() => {
+        clearInterval(spinInterval);
+        const winner = Math.random() < 0.5 ? teamA : teamB;
+        resultText.innerHTML = `🏆 Winner: <strong>${winner}</strong><br><span style="font-size: 14px; color: #64748b;">Serves first / chooses side!</span>`;
+        closeBtn.style.display = 'block';
+      }, 3000);
+    }
+
+    function closeCoinModal() {
+      document.getElementById('coinModal').style.display = 'none';
     }
 
     function finishMatch() {
