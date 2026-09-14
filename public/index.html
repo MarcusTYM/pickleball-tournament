@@ -28,7 +28,7 @@
       box-shadow: 0 1px 3px rgba(0,0,0,0.05); 
     }
     .header-brand { display: flex; align-items: center; gap: 15px; }
-    .header-logo { height: 40px; object-fit: contain; }
+    .header-logo { height: 65px; object-fit: contain; }
 
     .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; }
     
@@ -90,9 +90,9 @@
   </style>
 </head>
 <body>
-  <div id="setupScreen" class="card setup-box" style="display: none;">
-    <img src="/logo.png" alt="Sanmina Logo" style="height: 55px; margin-bottom: 15px;">
-    <h2>🎾 Tournament Setup</h2>
+<div id="setupScreen" class="card setup-box" style="display: none;">
+  <img src="/logo.png" alt="Sanmina Logo" style="height: 85px; margin-bottom: 15px;">
+  <h2>🎾 Tournament Setup</h2>
     <p style="color: #64748b; font-size: 14px;">Configure event parameters:</p>
     <div style="margin-bottom: 15px; text-align: left;">
       <label><strong>Total Number of Pairs:</strong></label><br>
@@ -108,7 +108,7 @@
   <div id="dashboardScreen" style="display: none;">
     <div class="header-bar">
       <div class="header-brand">
-        <img src="/logo.png" alt="Sanmina Logo" class="header-logo">
+        <img src="/logo.png" alt="Sanmina Logo" class="header-logo" style="height: 65px;">
         <h1>Pickleball Tournament Host Dashboard</h1>
       </div>
       <button class="btn-red" onclick="resetTournament()">🔄 Reset Tournament</button>
