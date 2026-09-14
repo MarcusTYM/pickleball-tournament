@@ -164,10 +164,10 @@
       document.getElementById('setupScreen').style.display = 'none';
       document.getElementById('dashboardScreen').style.display = 'block';
 
-      // Render Enhanced Court Cards
+      // Render Enhanced Court Cards for Courts 4, 5, and 6
       let courtsHtml = '';
-      for (let i = 1; i <= 3; i++) {
-        const c = activeCourts[i];
+      [4, 5, 6].forEach(i => {
+        const c = activeCourts[i] || { teamA: '', teamB: '', scoreA: 0, scoreB: 0, matchId: null };
         const isLive = !!c.matchId;
         courtsHtml += `
           <div class="court-card">
@@ -187,7 +187,7 @@
               ${isLive ? `<button onclick="finishMatch(${i})" style="background:#dc2626; width: 100%;">Finish Match</button>` : '<div style="text-align: center; color: #94a3b8; font-size: 13px;">Ready for assignment</div>'}
             </div>
           </div>`;
-      }
+      });
       document.getElementById('courtsContainer').innerHTML = courtsHtml;
 
       // Render Knockout Bracket
@@ -205,9 +205,9 @@
               <div>
                 ${(m.status === 'UPCOMING' || m.status === 'READY') ? `
                   <select id="assign-court-${m.id}">
-                    <option value="1">Court 1</option>
-                    <option value="2">Court 2</option>
-                    <option value="3">Court 3</option>
+                    <option value="4">Court 4</option>
+                    <option value="5">Court 5</option>
+                    <option value="6">Court 6</option>
                   </select>
                   <button onclick="assignMatch(${m.id})">Send to Court</button>
                 ` : `<em style="color: #94a3b8; font-size: 13px;">Status: ${m.status}</em>`}
@@ -256,9 +256,9 @@
             </span>
             <div>
               <select id="assign-court-${m.id}">
-                <option value="1">Court 1</option>
-                <option value="2">Court 2</option>
-                <option value="3">Court 3</option>
+                <option value="4">Court 4</option>
+                <option value="5">Court 5</option>
+                <option value="6">Court 6</option>
               </select>
               <button onclick="assignMatch(${m.id})">Send to Court</button>
             </div>
