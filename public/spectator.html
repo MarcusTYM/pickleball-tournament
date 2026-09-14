@@ -123,7 +123,7 @@
     socket.on('initData', renderAll);
     socket.on('stateUpdated', renderAll);
     socket.on('scoreUpdated', ({ courtId, scoreA, scoreB }) => {
-      const el = document.getElementById(`c${courtId}-score`);
+      const el = document.getElementById(`c-${courtId.replace(/\s+/g, '-')}-score`);
       if (el) el.innerText = `${scoreA} - ${scoreB}`;
     });
 
@@ -131,23 +131,30 @@
       if (!data) return;
       const { tournament, activeCourts } = data;
 
-      // Render Courts
+      // Render Courts Dynamically
       let courtsHtml = '';
-      for (let i = 1; i <= 3; i++) {
-        const c = activeCourts[i];
-        courtsHtml += `
-          <div class="court-card">
-            <div class="court-label">Court ${i}</div>
-            ${c.matchId ? `
-              <div>
-                <span class="multiline-name">${c.teamA}</span>
-                <div style="color: #64748b; font-size: 13px; margin: 4px 0; font-weight: bold;">VS</div>
-                <span class="multiline-name">${c.teamB}</span>
-              </div>
-              <div class="score-display" id="c${i}-score">${c.scoreA} - ${c.scoreB}</div>
-              <span class="badge-live">MATCH IN PROGRESS</span>
-            ` : '<div style="color: #64748b; margin: 35px 0; font-style: italic;">Court Available</div>'}
-          </div>`;
+      const courtKeys = Object.keys(activeCourts || {});
+      
+      if (courtKeys.length > 0) {
+        courtKeys.forEach(cName => {
+          const c = activeCourts[cName];
+          const safeId = cName.replace(/\s+/g, '-');
+          courtsHtml += `
+            <div class="court-card">
+              <div class="court-label">${cName}</div>
+              ${c.matchId ? `
+                <div>
+                  <span class="multiline-name">${c.teamA}</span>
+                  <div style="color: #64748b; font-size: 13px; margin: 4px 0; font-weight: bold;">VS</div>
+                  <span class="multiline-name">${c.teamB}</span>
+                </div>
+                <div class="score-display" id="c-${safeId}-score">${c.scoreA} - ${c.scoreB}</div>
+                <span class="badge-live">MATCH IN PROGRESS</span>
+              ` : '<div style="color: #64748b; margin: 35px 0; font-style: italic;">Court Available</div>'}
+            </div>`;
+        });
+      } else {
+        courtsHtml = '<p style="color: #94a3b8; text-align: center;">No active courts initialized.</p>';
       }
       document.getElementById('courtsContainer').innerHTML = courtsHtml;
 
@@ -157,7 +164,6 @@
         const finalMatch = tournament.knockout.matches.find(m => m.id === 104);
         const playoffMatch = tournament.knockout.matches.find(m => m.id === 103);
 
-        // Podium Display
         let podiumHtml = '';
         if (finalMatch && finalMatch.winner) {
           podiumHtml = `
@@ -191,23 +197,25 @@
 
       // Render Standings Tables
       let standingsHtml = '';
-      Object.keys(tournament.groups).forEach(g => {
-        standingsHtml += `
-          <div class="card" style="padding: 15px;">
-            <h3 style="color: #f87171; margin: 0 0 10px 0; font-size: 16px;">Group ${g}</h3>
-            <table>
-              <tr><th>Rank</th><th>Pair Name</th><th>W</th><th>L</th><th>Diff</th></tr>
-              ${tournament.groups[g].map((p, idx) => `
-                <tr>
-                  <td style="color: #94a3b8; font-weight: bold;">#${idx + 1}</td>
-                  <td><span class="multiline-name">${p.name}</span></td>
-                  <td style="color: #22c55e; font-weight: bold;">${p.wins}</td>
-                  <td style="color: #ef4444;">${p.losses}</td>
-                  <td style="font-weight: 500;">${p.diff > 0 ? '+' + p.diff : p.diff}</td>
-                </tr>`).join('')}
-            </table>
-          </div>`;
-      });
+      if (tournament.groups) {
+        Object.keys(tournament.groups).forEach(g => {
+          standingsHtml += `
+            <div class="card" style="padding: 15px;">
+              <h3 style="color: #f87171; margin: 0 0 10px 0; font-size: 16px;">Group ${g}</h3>
+              <table>
+                <tr><th>Rank</th><th>Pair Name</th><th>W</th><th>L</th><th>Diff</th></tr>
+                ${tournament.groups[g].map((p, idx) => `
+                  <tr>
+                    <td style="color: #94a3b8; font-weight: bold;">#${idx + 1}</td>
+                    <td><span class="multiline-name">${p.name}</span></td>
+                    <td style="color: #22c55e; font-weight: bold;">${p.wins}</td>
+                    <td style="color: #ef4444;">${p.losses}</td>
+                    <td style="font-weight: 500;">${p.diff > 0 ? '+' + p.diff : p.diff}</td>
+                  </tr>`).join('')}
+              </table>
+            </div>`;
+        });
+      }
       document.getElementById('standingsContainer').innerHTML = standingsHtml;
     }
   </script>

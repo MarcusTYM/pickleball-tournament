@@ -30,13 +30,9 @@ async function saveData() {
 }
 
 let tournament = { initialized: false, groups: {}, schedule: [], knockout: { generated: false, matches: [] } };
-let activeCourts = {
-  1: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0 },
-  2: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0 },
-  3: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0 }
-};
+let activeCourts = {};
 
-function createDynamicTournament(numTeams, numGroups) {
+function createDynamicTournament(numTeams, numGroups, courtNamesArray) {
   const groupNames = ['A', 'B', 'C', 'D', 'E', 'F'].slice(0, numGroups);
   const groups = {};
   groupNames.forEach(g => groups[g] = []);
@@ -71,10 +67,17 @@ function createDynamicTournament(numTeams, numGroups) {
     }
   });
 
+  // Setup activeCourts dynamically using provided court names
+  activeCourts = {};
+  courtNamesArray.forEach(cName => {
+    activeCourts[cName] = { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0 };
+  });
+
   return {
     initialized: true,
     numTeams,
     numGroups,
+    courtNames: courtNamesArray,
     groups,
     schedule,
     knockout: { generated: false, matches: [] }
@@ -88,7 +91,7 @@ async function loadInitialData() {
       if (saved) {
         const parsed = typeof saved === 'string' ? JSON.parse(saved) : saved;
         tournament = parsed.tournament;
-        activeCourts = parsed.activeCourts;
+        activeCourts = parsed.activeCourts || {};
       }
     }
   } catch (err) {
@@ -100,24 +103,16 @@ loadInitialData();
 io.on('connection', (socket) => {
   socket.emit('initData', { tournament, activeCourts });
 
-  socket.on('setupTournament', async ({ numTeams, numGroups }) => {
-    tournament = createDynamicTournament(parseInt(numTeams), parseInt(numGroups));
-    activeCourts = {
-      1: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0 },
-      2: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0 },
-      3: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0 }
-    };
+  socket.on('setupTournament', async ({ numTeams, numGroups, courtNames }) => {
+    const courtsList = courtNames ? courtNames.split(',').map(s => s.trim()).filter(Boolean) : ['Court 1', 'Court 2', 'Court 3'];
+    tournament = createDynamicTournament(parseInt(numTeams), parseInt(numGroups), courtsList);
     await saveData();
     io.emit('stateUpdated', { tournament, activeCourts });
   });
 
   socket.on('resetTournament', async () => {
     tournament = { initialized: false, groups: {}, schedule: [], knockout: { generated: false, matches: [] } };
-    activeCourts = {
-      1: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0 },
-      2: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0 },
-      3: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0 }
-    };
+    activeCourts = {};
     await saveData();
     io.emit('stateUpdated', { tournament, activeCourts });
   });
@@ -162,10 +157,10 @@ io.on('connection', (socket) => {
         if (m.teamAId === teamId) m.teamA = newName;
         if (m.teamBId === teamId) m.teamB = newName;
       });
-      for (let c = 1; c <= 3; c++) {
-        if (activeCourts[c].teamA === oldName) activeCourts[c].teamA = newName;
-        if (activeCourts[c].teamB === oldName) activeCourts[c].teamB = newName;
-      }
+      Object.keys(activeCourts).forEach(cKey => {
+        if (activeCourts[cKey].teamA === oldName) activeCourts[cKey].teamA = newName;
+        if (activeCourts[cKey].teamB === oldName) activeCourts[cKey].teamB = newName;
+      });
       await saveData();
       io.emit('stateUpdated', { tournament, activeCourts });
     }

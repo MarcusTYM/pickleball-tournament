@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tournament Admin Panel</title>
+  <style>
+    :root {
+      --primary-red: #e1251b;
+      --dark-bg: #0f172a;
+      --card-bg: #1e293b;
+      --border-color: #334155;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      margin: 0;
+      padding: 24px;
+      background: var(--dark-bg);
+      color: #f8fafc;
+    }
+
+    h1, h2, h3 { color: #ffffff; margin-top: 0; }
+    h2 { color: #f87171; font-size: 18px; margin-bottom: 15px; border-left: 4px solid var(--primary-red); padding-left: 10px; }
+
+    .card {
+      background: var(--card-bg);
+      padding: 20px;
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
+      margin-bottom: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+
+    label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 14px; color: #cbd5e1; }
+    input, select, button {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+      background: #0f172a;
+      color: white;
+      box-sizing: border-box;
+      font-size: 14px;
+    }
+
+    button {
+      background: var(--primary-red);
+      font-weight: bold;
+      cursor: pointer;
+      border: none;
+      transition: background 0.2s;
+    }
+    button:hover { background: #c81e17; }
+    button.btn-secondary { background: #475569; }
+    button.btn-secondary:hover { background: #334155; }
+    button.btn-danger { background: #dc2626; }
+    button.btn-danger:hover { background: #b91c1c; }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border: 1px solid var(--border-color); padding: 8px 10px; text-align: left; font-size: 13px; }
+    th { background: #334155; }
+
+    .court-control {
+      border: 1px solid var(--border-color);
+      padding: 15px;
+      border-radius: 8px;
+      background: #162032;
+      margin-bottom: 15px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: bold;
+    }
+    .badge-upcoming { background: #3b82f6; color: white; }
+    .badge-live { background: #22c55e; color: white; }
+    .badge-finished { background: #64748b; color: white; }
+    .badge-waiting { background: #f59e0b; color: white; }
+  </style>
+</head>
+<body>
+
+  <h1>Tournament Control Panel</h1>
+
+  <!-- Setup Section -->
+  <div class="card">
+    <h2>Tournament Setup</h2>
+    <div class="grid-2">
+      <div>
+        <label>Total Teams/Pairs:</label>
+        <input type="number" id="numTeams" value="12" min="4" max="32" />
+
+        <label>Number of Groups:</label>
+        <input type="number" id="numGroups" value="3" min="2" max="6" />
+
+        <label>Court Names (comma-separated):</label>
+        <input type="text" id="courtNames" value="Court 1, Court 2, Court 3" placeholder="e.g. Court A, Court B, Main Court" />
+
+        <button onclick="setupTournament()">Initialize / Re-generate Tournament</button>
+        <button class="btn-danger" onclick="resetTournament()" style="margin-top: 5px;">Reset All Data</button>
+      </div>
+      <div>
+        <label>Generate Knockout Stage:</label>
+        <p style="font-size: 13px; color: #94a3b8; margin-top: 0;">
+          Generates Semifinals, 3rd Place Playoff, and Finals using group winners and top performers.
+        </p>
+        <button class="btn-secondary" onclick="generateKnockout()">Generate Knockout Stage</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Active Courts Control -->
+  <div class="card">
+    <h2>Live Court Score Control</h2>
+    <div class="grid-2" id="courtControlsContainer"></div>
+  </div>
+
+  <!-- Match Scheduler -->
+  <div class="card">
+    <h2>Assign Match to Court</h2>
+    <div class="grid-2">
+      <div>
+        <label>Select Upcoming Match:</label>
+        <select id="matchSelect"></select>
+      </div>
+      <div>
+        <label>Assign to Court:</label>
+        <select id="courtSelect"></select>
+      </div>
+    </div>
+    <button onclick="assignMatch()">Start Match on Selected Court</button>
+  </div>
+
+  <!-- Teams Management -->
+  <div class="card">
+    <h2>Manage Team Names</h2>
+    <div id="teamNamesContainer" class="grid-2"></div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+
+    socket.on('initData', renderAll);
+    socket.on('stateUpdated', renderAll);
+
+    function setupTournament() {
+      const numTeams = document.getElementById('numTeams').value;
+      const numGroups = document.getElementById('numGroups').value;
+      const courtNames = document.getElementById('courtNames').value;
+      socket.emit('setupTournament', { numTeams, numGroups, courtNames });
+    }
+
+    function resetTournament() {
+      if (confirm("Are you sure you want to reset the entire tournament state?")) {
+        socket.emit('resetTournament');
+      }
+    }
+
+    function generateKnockout() {
+      socket.emit('generateKnockout');
+    }
+
+    function assignMatch() {
+      const matchId = parseInt(document.getElementById('matchSelect').value);
+      const courtId = document.getElementById('courtSelect').value;
+      if (matchId && courtId) {
+        socket.emit('assignMatch', { matchId, courtId });
+      }
+    }
+
+    function updateScore(courtId) {
+      const safeId = courtId.replace(/\s+/g, '-');
+      const scoreA = parseInt(document.getElementById(`scoreA-${safeId}`).value) || 0;
+      const scoreB = parseInt(document.getElementById(`scoreB-${safeId}`).value) || 0;
+      socket.emit('updateScore', { courtId, scoreA, scoreB });
+    }
+
+    function finishMatch(courtId) {
+      if (confirm(`Finish match on ${courtId}?`)) {
+        socket.emit('finishMatch', { courtId });
+      }
+    }
+
+    function saveTeamName(group, teamId) {
+      const safeId = teamId.replace(/\s+/g, '-');
+      const newName = document.getElementById(`team-input-${safeId}`).value;
+      if (newName) {
+        socket.emit('updateTeamName', { group, teamId, newName });
+      }
+    }
+
+    function renderAll(data) {
+      if (!data) return;
+      const { tournament, activeCourts } = data;
+
+      // Render Court Controllers
+      let courtControlsHtml = '';
+      let courtOptionsHtml = '';
+      const courtKeys = Object.keys(activeCourts || {});
+
+      courtKeys.forEach(cName => {
+        const c = activeCourts[cName];
+        const safeId = cName.replace(/\s+/g, '-');
+        courtOptionsHtml += `<option value="${cName}">${cName}</option>`;
+
+        courtControlsHtml += `
+          <div class="court-control">
+            <h3 style="color: #f87171; margin-bottom: 8px;">${cName}</h3>
+            ${c.matchId ? `
+              <div style="font-size: 14px; margin-bottom: 10px;">
+                <strong>${c.teamA}</strong> vs <strong>${c.teamB}</strong>
+              </div>
+              <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
+                <input type="number" id="scoreA-${safeId}" value="${c.scoreA}" min="0" />
+                <span>:</span>
+                <input type="number" id="scoreB-${safeId}" value="${c.scoreB}" min="0" />
+              </div>
+              <button onclick="updateScore('${cName}')">Update Live Score</button>
+              <button class="btn-danger" onclick="finishMatch('${cName}')" style="margin-top: 5px;">Finish Match</button>
+            ` : '<p style="color: #64748b; font-style: italic; margin: 0;">Court Available</p>'}
+          </div>`;
+      });
+
+      document.getElementById('courtControlsContainer').innerHTML = courtControlsHtml || '<p style="color: #94a3b8;">No courts available.</p>';
+      document.getElementById('courtSelect').innerHTML = courtOptionsHtml;
+
+      // Render Match Options for Assignment
+      let matchOptionsHtml = '';
+      if (tournament.schedule) {
+        tournament.schedule.filter(m => m.status === 'UPCOMING').forEach(m => {
+          matchOptionsHtml += `<option value="${m.id}">[Group ${m.group}] ${m.teamA} vs ${m.teamB}</option>`;
+        });
+      }
+      if (tournament.knockout && tournament.knockout.generated) {
+        tournament.knockout.matches.filter(m => m.status === 'UPCOMING').forEach(m => {
+          matchOptionsHtml += `<option value="${m.id}">[${m.label}] ${m.teamA} vs ${m.teamB}</option>`;
+        });
+      }
+      document.getElementById('matchSelect').innerHTML = matchOptionsHtml || '<option value="">No upcoming matches ready</option>';
+
+      // Render Team Name Editors
+      let teamEditorsHtml = '';
+      if (tournament.groups) {
+        Object.keys(tournament.groups).forEach(g => {
+          teamEditorsHtml += `<div style="background: #162032; padding: 12px; border-radius: 8px;"><h4 style="margin: 0 0 10px 0;">Group ${g}</h4>`;
+          tournament.groups[g].forEach(t => {
+            const safeId = t.id.replace(/\s+/g, '-');
+            teamEditorsHtml += `
+              <div style="display: flex; gap: 8px; margin-bottom: 6px;">
+                <input type="text" id="team-input-${safeId}" value="${t.name}" style="margin:0;" />
+                <button onclick="saveTeamName('${g}', '${t.id}')" style="width: 80px; margin:0;">Save</button>
+              </div>`;
+          });
+          teamEditorsHtml += `</div>`;
+        });
+      }
+      document.getElementById('teamNamesContainer').innerHTML = teamEditorsHtml;
+    }
+  </script>
+</body>
+</html>
