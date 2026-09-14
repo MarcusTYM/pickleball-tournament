@@ -3,113 +3,219 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Court Scorer Panel</title>
+  <title>Scorer Controller</title>
   <style>
     :root {
       --primary-red: #e1251b;
-      --dark-bg: #0f172a;
-      --card-bg: #1e293b;
-      --border-color: #334155;
+      --border-color: #e2e8f0;
+      --bg-light: #f1f5f9;
+      --card-bg: #ffffff;
+      --btn-blue: #0284c7;
+      --btn-slate: #475569;
     }
 
     body {
       font-family: system-ui, -apple-system, sans-serif;
       margin: 0;
-      padding: 16px;
-      background: var(--dark-bg);
-      color: #f8fafc;
+      padding: 20px;
+      background: var(--bg-light);
+      color: #1e293b;
     }
 
-    h1 { font-size: 22px; text-align: center; margin-bottom: 20px; color: #ffffff; }
-
-    .card {
-      background: var(--card-bg);
-      padding: 18px;
-      border-radius: 12px;
-      border: 1px solid var(--border-color);
-      margin-bottom: 20px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    }
-
-    label { display: block; margin-bottom: 8px; font-weight: 600; color: #cbd5e1; font-size: 14px; }
-    select, button {
-      width: 100%;
-      padding: 12px;
-      margin-bottom: 12px;
+    .header-card {
+      background: white;
+      padding: 12px 20px;
       border-radius: 8px;
-      border: 1px solid var(--border-color);
-      background: #0f172a;
-      color: white;
-      font-size: 16px;
-      box-sizing: border-box;
-    }
-
-    button {
-      background: var(--primary-red);
-      font-weight: bold;
-      cursor: pointer;
-      border: none;
-    }
-    button:active { background: #c81e17; }
-    button.btn-danger { background: #dc2626; }
-    button.btn-secondary { background: #475569; }
-
-    .score-control-box {
       display: flex;
-      flex-direction: column;
-      gap: 15px;
-      margin-top: 15px;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
     }
+    .brand-logo { height: 20px; object-fit: contain; }
+    .header-title { font-size: 20px; font-weight: 800; color: #0f172a; margin: 0; }
 
-    .team-score-card {
-      background: #162032;
-      padding: 15px;
-      border-radius: 10px;
+    .court-title {
       text-align: center;
-      border: 1px solid var(--border-color);
-    }
-
-    .team-name { font-size: 18px; font-weight: bold; margin-bottom: 10px; color: #f87171; white-space: pre-line; }
-    .score-num { font-size: 48px; font-weight: 800; color: #ffffff; margin: 10px 0; }
-
-    .btn-row { display: flex; gap: 10px; }
-    .btn-row button { margin-bottom: 0; font-size: 20px; font-weight: bold; }
-
-    .timer-display {
-      text-align: center;
-      background: #0f172a;
-      border: 1px solid var(--border-color);
-      color: #38bdf8;
+      color: var(--primary-red);
       font-size: 20px;
       font-weight: 800;
+      margin: 0 0 8px 0;
+    }
+
+    .timer-badge {
+      text-align: center;
+      color: #0284c7;
+      font-size: 18px;
+      font-weight: 800;
+      margin-bottom: 16px;
+    }
+
+    .court-select-container {
+      max-width: 400px;
+      margin: 0 auto 20px auto;
+      text-align: center;
+    }
+
+    select {
+      width: 100%;
       padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #cbd5e1;
+      font-size: 16px;
+      font-weight: bold;
+      background: white;
+    }
+
+    .top-action-bar {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .btn-action-blue {
+      background: var(--btn-blue);
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 6px;
+      font-weight: bold;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    .btn-action-slate {
+      background: var(--btn-slate);
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 6px;
+      font-weight: bold;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    .teams-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .team-card {
+      background: var(--card-bg);
       border-radius: 8px;
+      border-top: 4px solid var(--primary-red);
+      padding: 20px 15px;
+      text-align: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .team-name {
+      font-size: 18px;
+      font-weight: 800;
+      color: #0f172a;
+      min-height: 24px;
       margin-bottom: 15px;
+      white-space: pre-line;
+    }
+
+    .score-display {
+      font-size: 64px;
+      font-weight: 800;
+      color: var(--primary-red);
+      margin: 10px 0 20px 0;
+      line-height: 1;
+    }
+
+    .btn-plus {
+      width: 100%;
+      background: var(--primary-red);
+      color: white;
+      border: none;
+      padding: 14px;
+      border-radius: 6px;
+      font-size: 22px;
+      font-weight: 800;
+      cursor: pointer;
+      margin-bottom: 8px;
+    }
+
+    .btn-minus {
+      width: 100%;
+      background: #e2e8f0;
+      color: #475569;
+      border: none;
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .btn-finish {
+      width: 100%;
+      background: var(--primary-red);
+      color: white;
+      border: none;
+      padding: 16px;
+      border-radius: 6px;
+      font-size: 18px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
   </style>
 </head>
 <body>
 
-  <h1>Court Scorer Control</h1>
+  <div class="header-card">
+    <img src="/logo.png" alt="Sanmina Logo" class="brand-logo">
+    <h1 class="header-title">Scorer Controller</h1>
+  </div>
 
-  <div class="card">
-    <label>Select Your Assigned Court:</label>
+  <div class="court-select-container">
     <select id="courtSelect" onchange="changeCourt()">
       <option value="1">Court 1</option>
       <option value="2">Court 2</option>
-      <option value="3">Court 3</option>
+      <option value="3" selected>Court 3</option>
     </select>
   </div>
 
-  <div class="card" id="activeMatchContainer">
-    <p style="text-align: center; color: #94a3b8; font-style: italic;">Select a court to begin scoring</p>
+  <h2 class="court-title" id="courtTitleDisplay">Court 3 - Live Match</h2>
+  <div class="timer-badge" id="scorerMatchTimer">⏱ 00:00</div>
+
+  <div class="top-action-bar">
+    <button class="btn-action-blue" onclick="coinToss()">🪙 Coin Toss</button>
+    <button class="btn-action-slate" onclick="swapSides()">↔️ Swap Sides</button>
   </div>
+
+  <div class="teams-container">
+    <div class="team-card">
+      <div class="team-name" id="teamAName">Empty</div>
+      <div class="score-display" id="scorerScoreA">0</div>
+      <button class="btn-plus" onclick="adjustScore('A', 1)">+1</button>
+      <button class="btn-minus" onclick="adjustScore('A', -1)">-1</button>
+    </div>
+
+    <div class="team-card">
+      <div class="team-name" id="teamBName">Empty</div>
+      <div class="score-display" id="scorerScoreB">0</div>
+      <button class="btn-plus" onclick="adjustScore('B', 1)">+1</button>
+      <button class="btn-minus" onclick="adjustScore('B', -1)">-1</button>
+    </div>
+  </div>
+
+  <button class="btn-finish" onclick="finishMatch()">🏁 Finish Match & Submit Score</button>
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
-    let selectedCourt = 1;
+    let selectedCourt = 3;
     let currentCourts = {};
+    let isSwapped = false;
 
     socket.on('initData', (data) => {
       currentCourts = data.activeCourts || {};
@@ -125,10 +231,7 @@
       if (courtId == selectedCourt && currentCourts[courtId]) {
         currentCourts[courtId].scoreA = scoreA;
         currentCourts[courtId].scoreB = scoreB;
-        const elA = document.getElementById('scorerScoreA');
-        const elB = document.getElementById('scorerScoreB');
-        if (elA) elA.innerText = scoreA;
-        if (elB) elB.innerText = scoreB;
+        renderScorer();
       }
     });
 
@@ -142,25 +245,43 @@
           const secs = String(elapsed % 60).padStart(2, '0');
           timerEl.innerText = `⏱ ${mins}:${secs}`;
         }
+      } else {
+        const timerEl = document.getElementById('scorerMatchTimer');
+        if (timerEl) timerEl.innerText = '⏱ 00:00';
       }
     }, 1000);
 
     function changeCourt() {
       selectedCourt = parseInt(document.getElementById('courtSelect').value);
+      isSwapped = false;
+      document.getElementById('courtTitleDisplay').innerText = `Court ${selectedCourt} - Live Match`;
       renderScorer();
     }
 
-    function adjustScore(team, delta) {
+    function adjustScore(position, delta) {
       const c = currentCourts[selectedCourt];
       if (!c || !c.matchId) return;
 
       let scoreA = c.scoreA;
       let scoreB = c.scoreB;
 
-      if (team === 'A') scoreA = Math.max(0, scoreA + delta);
-      if (team === 'B') scoreB = Math.max(0, scoreB + delta);
+      // Account for visually swapped sides
+      const targetTeam = isSwapped ? (position === 'A' ? 'B' : 'A') : position;
+
+      if (targetTeam === 'A') scoreA = Math.max(0, scoreA + delta);
+      if (targetTeam === 'B') scoreB = Math.max(0, scoreB + delta);
 
       socket.emit('updateScore', { courtId: selectedCourt, scoreA, scoreB });
+    }
+
+    function swapSides() {
+      isSwapped = !isSwapped;
+      renderScorer();
+    }
+
+    function coinToss() {
+      const winner = Math.random() < 0.5 ? 'Team Left' : 'Team Right';
+      alert(`Coin Toss Result: ${winner} serves first / chooses side!`);
     }
 
     function finishMatch() {
@@ -171,37 +292,16 @@
 
     function renderScorer() {
       const c = currentCourts[selectedCourt];
-      const container = document.getElementById('activeMatchContainer');
 
-      if (!c || !c.matchId) {
-        container.innerHTML = `<p style="text-align: center; color: #64748b; font-style: italic; margin: 20px 0;">No active match currently assigned to Court ${selectedCourt}.</p>`;
-        return;
-      }
+      const nameA = c ? c.teamA : 'Empty';
+      const nameB = c ? c.teamB : 'Empty';
+      const scoreA = c ? c.scoreA : 0;
+      const scoreB = c ? c.scoreB : 0;
 
-      container.innerHTML = `
-        <div class="timer-display" id="scorerMatchTimer">⏱ 00:00</div>
-        <div class="score-control-box">
-          <div class="team-score-card">
-            <div class="team-name">${c.teamA}</div>
-            <div class="score-num" id="scorerScoreA">${c.scoreA}</div>
-            <div class="btn-row">
-              <button class="btn-secondary" onclick="adjustScore('A', -1)">-1</button>
-              <button onclick="adjustScore('A', 1)">+1</button>
-            </div>
-          </div>
-
-          <div class="team-score-card">
-            <div class="team-name">${c.teamB}</div>
-            <div class="score-num" id="scorerScoreB">${c.scoreB}</div>
-            <div class="btn-row">
-              <button class="btn-secondary" onclick="adjustScore('B', -1)">-1</button>
-              <button onclick="adjustScore('B', 1)">+1</button>
-            </div>
-          </div>
-        </div>
-
-        <button class="btn-danger" onclick="finishMatch()" style="margin-top: 20px;">Finish & Submit Match</button>
-      `;
+      document.getElementById('teamAName').innerText = isSwapped ? nameB : nameA;
+      document.getElementById('teamBName').innerText = isSwapped ? nameA : nameB;
+      document.getElementById('scorerScoreA').innerText = isSwapped ? scoreB : scoreA;
+      document.getElementById('scorerScoreB').innerText = isSwapped ? scoreA : scoreB;
     }
   </script>
 </body>
