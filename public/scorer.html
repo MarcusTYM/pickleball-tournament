@@ -2,377 +2,370 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Scorer Controller</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Scorer Controller - Pickleball Tournament</title>
   <style>
     :root {
       --primary-red: #e1251b;
-      --border-color: #e2e8f0;
-      --bg-light: #f1f5f9;
-      --card-bg: #ffffff;
-      --btn-blue: #0284c7;
-      --btn-slate: #475569;
+      --dark-slate: #1e293b;
+      --light-bg: #f8fafc;
     }
 
     body {
       font-family: system-ui, -apple-system, sans-serif;
       margin: 0;
-      padding: 20px;
-      background: var(--bg-light);
-      color: #1e293b;
+      padding: 15px;
+      background: #f1f5f9;
+      color: #334155;
+      text-align: center;
+      user-select: none;
     }
 
-    .header-card {
+    .brand-header {
       background: white;
-      padding: 12px 20px;
+      padding: 10px;
       border-radius: 8px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 12px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-      margin-bottom: 20px;
+      gap: 10px;
     }
-    .brand-logo { height: 20px; object-fit: contain; }
-    .header-title { font-size: 20px; font-weight: 800; color: #0f172a; margin: 0; }
+    .brand-logo { height: 32px; object-fit: contain; }
 
-    .court-title {
-      text-align: center;
-      color: var(--primary-red);
-      font-size: 20px;
-      font-weight: 800;
-      margin: 0 0 8px 0;
-    }
+    h1 { color: var(--dark-slate); font-size: 20px; margin: 0; }
+    h2 { color: var(--primary-red); font-size: 18px; margin: 5px 0 2px 0; font-weight: 700; }
 
     .timer-badge {
-      text-align: center;
       color: #0284c7;
       font-size: 18px;
       font-weight: 800;
-      margin-bottom: 16px;
+      margin-bottom: 15px;
+      font-variant-numeric: tabular-nums;
     }
 
-    .court-select-container {
-      max-width: 400px;
-      margin: 0 auto 20px auto;
-      text-align: center;
+    .action-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 15px;
     }
 
-    select {
-      width: 100%;
-      padding: 10px;
+    .btn-action {
+      background: #475569;
+      color: white;
+      border: none;
+      padding: 10px 8px;
       border-radius: 6px;
-      border: 1px solid #cbd5e1;
-      font-size: 16px;
+      font-size: 13px;
       font-weight: bold;
-      background: white;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .btn-action:active { background: #334155; transform: scale(0.98); }
+    .btn-toss { background: #0284c7; }
+    .btn-toss:active { background: #0369a1; }
+
+    /* Coin Toss Overlay Modal */
+    .toss-modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 23, 42, 0.85);
+      z-index: 999;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      padding: 20px;
     }
 
-    .top-action-bar {
+    .toss-card {
+      background: white;
+      padding: 24px;
+      border-radius: 12px;
+      width: 85%;
+      max-width: 320px;
+      text-align: center;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+
+    .coin {
+      width: 90px;
+      height: 90px;
+      margin: 20px auto;
+      border-radius: 50%;
+      background: #f59e0b;
+      border: 4px solid #d97706;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: 800;
+      color: white;
+      box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
+    }
+
+    .spinning {
+      animation: spin 0.15s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotateY(0deg); }
+      50% { transform: rotateY(180deg); }
+      100% { transform: rotateY(360deg); }
+    }
+
+    .score-container {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 12px;
-      margin-bottom: 16px;
-    }
-
-    .btn-action-blue {
-      background: var(--btn-blue);
-      color: white;
-      border: none;
-      padding: 12px;
-      border-radius: 6px;
-      font-weight: bold;
-      font-size: 15px;
-      cursor: pointer;
-    }
-
-    .btn-action-slate {
-      background: var(--btn-slate);
-      color: white;
-      border: none;
-      padding: 12px;
-      border-radius: 6px;
-      font-weight: bold;
-      font-size: 15px;
-      cursor: pointer;
-    }
-
-    .teams-container {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
       margin-bottom: 20px;
     }
 
-    .team-card {
-      background: var(--card-bg);
-      border-radius: 8px;
+    .team-box {
+      background: white;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.06);
       border-top: 4px solid var(--primary-red);
-      padding: 20px 15px;
-      text-align: center;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
     }
 
     .team-name {
-      font-size: 18px;
-      font-weight: 800;
-      color: #0f172a;
-      min-height: 24px;
-      margin-bottom: 15px;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--dark-slate);
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       white-space: pre-line;
     }
 
-    .score-display {
-      font-size: 64px;
+    .score-num {
+      font-size: 54px;
       font-weight: 800;
       color: var(--primary-red);
-      margin: 10px 0 20px 0;
-      line-height: 1;
+      margin: 10px 0;
+      font-variant-numeric: tabular-nums;
     }
 
-    .btn-plus {
-      width: 100%;
+    .btn-score {
       background: var(--primary-red);
       color: white;
       border: none;
-      padding: 14px;
-      border-radius: 6px;
-      font-size: 22px;
-      font-weight: 800;
+      font-size: 24px;
+      font-weight: bold;
+      padding: 15px 0;
+      border-radius: 8px;
+      width: 100%;
       cursor: pointer;
-      margin-bottom: 8px;
+      touch-action: manipulation;
     }
+    .btn-score:active { background: #b91c1c; transform: scale(0.98); }
 
     .btn-minus {
-      width: 100%;
       background: #e2e8f0;
       color: #475569;
       border: none;
-      padding: 10px;
-      border-radius: 6px;
       font-size: 16px;
       font-weight: bold;
+      padding: 10px 0;
+      border-radius: 6px;
+      width: 100%;
+      margin-top: 8px;
       cursor: pointer;
+      touch-action: manipulation;
     }
+    .btn-minus:active { background: #cbd5e1; }
 
     .btn-finish {
-      width: 100%;
-      background: var(--primary-red);
+      background: #dc2626;
       color: white;
       border: none;
-      padding: 16px;
-      border-radius: 6px;
-      font-size: 18px;
-      font-weight: 800;
-      cursor: pointer;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-
-    /* Modal Styling */
-    .modal-overlay {
-      position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(15, 23, 42, 0.8);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-      display: none;
-    }
-    .modal-card {
-      background: white;
-      padding: 30px;
-      border-radius: 12px;
-      text-align: center;
-      max-width: 320px;
+      font-size: 16px;
+      font-weight: 700;
+      padding: 14px 0;
+      border-radius: 8px;
       width: 100%;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+      cursor: pointer;
+      margin-top: 10px;
+      touch-action: manipulation;
+      box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2);
     }
-    .coin-icon {
-      font-size: 60px;
-      margin-bottom: 15px;
-      display: inline-block;
-      animation: bounce 0.5s infinite alternate;
-    }
-    @keyframes bounce {
-      from { transform: translateY(0); }
-      to { transform: translateY(-10px); }
-    }
-    .modal-title { font-size: 22px; font-weight: 800; color: #0f172a; margin: 0 0 10px 0; }
-    .modal-result { font-size: 18px; font-weight: bold; color: #0284c7; min-height: 28px; margin-bottom: 20px; }
-    .modal-btn { background: #0f172a; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; display: none; width: 100%; }
+    .btn-finish:active { background: #991b1b; transform: scale(0.98); }
   </style>
 </head>
 <body>
 
-  <div class="header-card">
+  <div class="brand-header">
     <img src="/logo.png" alt="Sanmina Logo" class="brand-logo">
-    <h1 class="header-title">Scorer Controller</h1>
+    <h1>Scorer Controller</h1>
   </div>
 
-  <div class="court-select-container">
-    <select id="courtSelect" onchange="changeCourt()">
-      <option value="1">Court 1</option>
-      <option value="2">Court 2</option>
-      <option value="3" selected>Court 3</option>
-    </select>
-  </div>
-
-  <h2 class="court-title" id="courtTitleDisplay">Court 3 - Live Match</h2>
+  <h2 id="courtTitle">Court 1 - Live Match</h2>
   <div class="timer-badge" id="scorerMatchTimer">⏱ 00:00</div>
 
-  <div class="top-action-bar">
-    <button class="btn-action-blue" onclick="coinToss()">🪙 Coin Toss</button>
-    <button class="btn-action-slate" onclick="swapSides()">↔️ Swap Sides</button>
+  <div class="action-grid">
+    <button class="btn-action btn-toss" onclick="openCoinToss()">🪙 Coin Toss</button>
+    <button class="btn-action" onclick="toggleFlipSides()">↔️ Swap Sides</button>
   </div>
 
-  <div class="teams-container">
-    <div class="team-card">
-      <div class="team-name" id="teamAName">Empty</div>
-      <div class="score-display" id="scorerScoreA">0</div>
-      <button class="btn-plus" onclick="adjustScore('A', 1)">+1</button>
+  <div class="score-container" id="scoreContainer">
+    <!-- Team A Box -->
+    <div class="team-box" id="boxA">
+      <div class="team-name" id="teamAName">Team A</div>
+      <div class="score-num" id="scoreA">0</div>
+      <button class="btn-score" onclick="adjustScore('A', 1)">+1</button>
       <button class="btn-minus" onclick="adjustScore('A', -1)">-1</button>
     </div>
 
-    <div class="team-card">
-      <div class="team-name" id="teamBName">Empty</div>
-      <div class="score-display" id="scorerScoreB">0</div>
-      <button class="btn-plus" onclick="adjustScore('B', 1)">+1</button>
+    <!-- Team B Box -->
+    <div class="team-box" id="boxB">
+      <div class="team-name" id="teamBName">Team B</div>
+      <div class="score-num" id="scoreB">0</div>
+      <button class="btn-score" onclick="adjustScore('B', 1)">+1</button>
       <button class="btn-minus" onclick="adjustScore('B', -1)">-1</button>
     </div>
   </div>
 
-  <button class="btn-finish" onclick="finishMatch()">🏁 Finish Match & Submit Score</button>
+  <!-- Finish Match Button -->
+  <button class="btn-finish" onclick="submitFinishMatch()">🏁 Finish Match & Submit Score</button>
 
-  <!-- Coin Toss Modal -->
-  <div class="modal-overlay" id="coinModal">
-    <div class="modal-card">
-      <div class="coin-icon" id="coinIcon">🪙</div>
-      <div class="modal-title">Coin Toss</div>
-      <div class="modal-result" id="modalResultText">Flipping coin...</div>
-      <button class="modal-btn" id="modalCloseBtn" onclick="closeCoinModal()">OK</button>
+  <!-- Coin Toss Modal Overlay -->
+  <div class="toss-modal" id="tossModal">
+    <div class="toss-card">
+      <h3 style="margin: 0; color: var(--dark-slate);">Pre-Match Toss</h3>
+      <p id="tossStatus" style="font-size: 13px; color: #64748b; margin: 6px 0 0 0;">Tap Flip to decide Serve / Side</p>
+
+      <div class="coin" id="coinElem">?</div>
+
+      <button id="btnFlip" class="btn-score" style="font-size: 16px; padding: 12px 0;" onclick="startCoinSpin()">Flip Coin</button>
+      <button id="btnCloseToss" class="btn-minus" style="margin-top: 10px;" onclick="closeCoinToss()">Close</button>
     </div>
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
-    let selectedCourt = 3;
-    let currentCourts = {};
-    let isSwapped = false;
+    const urlParams = new URLSearchParams(window.location.search);
+    const courtId = parseInt(urlParams.get('court')) || 1;
 
-    socket.on('initData', (data) => {
-      currentCourts = data.activeCourts || {};
-      renderScorer();
-    });
+    let currentScoreA = 0;
+    let currentScoreB = 0;
+    let activeMatchData = null;
+    let isFlipped = false;
+    let isSpinning = false;
 
-    socket.on('stateUpdated', (data) => {
-      currentCourts = data.activeCourts || {};
-      renderScorer();
-    });
-
-    socket.on('scoreUpdated', ({ courtId, scoreA, scoreB }) => {
-      if (courtId == selectedCourt && currentCourts[courtId]) {
-        currentCourts[courtId].scoreA = scoreA;
-        currentCourts[courtId].scoreB = scoreB;
-        renderScorer();
+    socket.on('initData', updateView);
+    socket.on('stateUpdated', updateView);
+    socket.on('scoreUpdated', ({ courtId: cId, scoreA, scoreB }) => {
+      if (cId === courtId) {
+        currentScoreA = scoreA;
+        currentScoreB = scoreB;
+        document.getElementById('scoreA').innerText = scoreA;
+        document.getElementById('scoreB').innerText = scoreB;
       }
     });
 
+    /* Live Timer Interval */
     setInterval(() => {
-      const c = currentCourts[selectedCourt];
-      if (c && c.matchId && c.startedAt) {
-        const timerEl = document.getElementById('scorerMatchTimer');
-        if (timerEl) {
-          const elapsed = Math.floor((Date.now() - c.startedAt) / 1000);
-          const mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
-          const secs = String(elapsed % 60).padStart(2, '0');
-          timerEl.innerText = `⏱ ${mins}:${secs}`;
-        }
+      const timerEl = document.getElementById('scorerMatchTimer');
+      if (activeMatchData && activeMatchData.matchId && activeMatchData.startedAt) {
+        const elapsed = Math.floor((Date.now() - activeMatchData.startedAt) / 1000);
+        const mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
+        const secs = String(elapsed % 60).padStart(2, '0');
+        if (timerEl) timerEl.innerText = `⏱ ${mins}:${secs}`;
       } else {
-        const timerEl = document.getElementById('scorerMatchTimer');
         if (timerEl) timerEl.innerText = '⏱ 00:00';
       }
     }, 1000);
 
-    function changeCourt() {
-      selectedCourt = parseInt(document.getElementById('courtSelect').value);
-      isSwapped = false;
-      document.getElementById('courtTitleDisplay').innerText = `Court ${selectedCourt} - Live Match`;
-      renderScorer();
-    }
-
-    function adjustScore(position, delta) {
-      const c = currentCourts[selectedCourt];
-      if (!c || !c.matchId) return;
-
-      let scoreA = c.scoreA;
-      let scoreB = c.scoreB;
-
-      const targetTeam = isSwapped ? (position === 'A' ? 'B' : 'A') : position;
-
-      if (targetTeam === 'A') scoreA = Math.max(0, scoreA + delta);
-      if (targetTeam === 'B') scoreB = Math.max(0, scoreB + delta);
-
-      socket.emit('updateScore', { courtId: selectedCourt, scoreA, scoreB });
-    }
-
-    function swapSides() {
-      isSwapped = !isSwapped;
-      renderScorer();
-    }
-
-    function coinToss() {
-      const c = currentCourts[selectedCourt];
-      const teamA = c && c.matchId ? c.teamA : 'Team A';
-      const teamB = c && c.matchId ? c.teamB : 'Team B';
-
-      const modal = document.getElementById('coinModal');
-      const resultText = document.getElementById('modalResultText');
-      const closeBtn = document.getElementById('modalCloseBtn');
-      const coinIcon = document.getElementById('coinIcon');
-
-      modal.style.display = 'flex';
-      closeBtn.style.display = 'none';
-      resultText.innerText = 'Flipping coin... (Heads / Tails)';
-
-      let counter = 0;
-      const spinInterval = setInterval(() => {
-        coinIcon.style.transform = `rotateY(${counter * 180}deg)`;
-        resultText.innerText = counter % 2 === 0 ? '✨ Heads ✨' : '✨ Tails ✨';
-        counter++;
-      }, 250);
-
-      setTimeout(() => {
-        clearInterval(spinInterval);
-        const winner = Math.random() < 0.5 ? teamA : teamB;
-        resultText.innerHTML = `🏆 Winner: <strong>${winner}</strong><br><span style="font-size: 14px; color: #64748b;">Serves first / chooses side!</span>`;
-        closeBtn.style.display = 'block';
-      }, 3000);
-    }
-
-    function closeCoinModal() {
-      document.getElementById('coinModal').style.display = 'none';
-    }
-
-    function finishMatch() {
-      if (confirm(`Finish match on Court ${selectedCourt}?`)) {
-        socket.emit('finishMatch', { courtId: selectedCourt });
+    function toggleFlipSides() {
+      isFlipped = !isFlipped;
+      const container = document.getElementById('scoreContainer');
+      const boxA = document.getElementById('boxA');
+      const boxB = document.getElementById('boxB');
+      
+      container.innerHTML = '';
+      if (isFlipped) {
+        container.appendChild(boxB);
+        container.appendChild(boxA);
+      } else {
+        container.appendChild(boxA);
+        container.appendChild(boxB);
       }
     }
 
-    function renderScorer() {
-      const c = currentCourts[selectedCourt];
+    /* Coin Toss Logic */
+    function openCoinToss() {
+      document.getElementById('tossModal').style.display = 'flex';
+      document.getElementById('coinElem').innerText = '?';
+      document.getElementById('tossStatus').innerText = 'Tap Flip to decide Serve / Side';
+      document.getElementById('btnFlip').disabled = false;
+    }
 
-      const nameA = c ? c.teamA : 'Empty';
-      const nameB = c ? c.teamB : 'Empty';
-      const scoreA = c ? c.scoreA : 0;
-      const scoreB = c ? c.scoreB : 0;
+    function closeCoinToss() {
+      if (isSpinning) return;
+      document.getElementById('tossModal').style.display = 'none';
+    }
 
-      document.getElementById('teamAName').innerText = isSwapped ? nameB : nameA;
-      document.getElementById('teamBName').innerText = isSwapped ? nameA : nameB;
-      document.getElementById('scorerScoreA').innerText = isSwapped ? scoreB : scoreA;
-      document.getElementById('scorerScoreB').innerText = isSwapped ? scoreA : scoreB;
+    function startCoinSpin() {
+      if (isSpinning) return;
+      isSpinning = true;
+
+      const coin = document.getElementById('coinElem');
+      const status = document.getElementById('tossStatus');
+      const btnFlip = document.getElementById('btnFlip');
+
+      btnFlip.disabled = true;
+      status.innerText = 'Flipping...';
+      coin.classList.add('spinning');
+
+      const result = Math.random() < 0.5 ? 'HEAD' : 'TAIL';
+
+      /* 3 Seconds Spin Duration */
+      setTimeout(() => {
+        coin.classList.remove('spinning');
+        coin.innerText = result;
+        status.innerText = `Result: ${result}! Winner chooses Side or Serve.`;
+        isSpinning = false;
+        btnFlip.disabled = false;
+      }, 3000);
+    }
+
+    function updateView(data) {
+      if (!data || !data.activeCourts) return;
+      const court = data.activeCourts[courtId];
+      activeMatchData = court;
+      document.getElementById('courtTitle').innerText = `Court ${courtId} - Live Match`;
+      document.getElementById('teamAName').innerText = court ? (court.teamA || 'Empty') : 'Empty';
+      document.getElementById('teamBName').innerText = court ? (court.teamB || 'Empty') : 'Empty';
+      currentScoreA = court ? (court.scoreA || 0) : 0;
+      currentScoreB = court ? (court.scoreB || 0) : 0;
+      document.getElementById('scoreA').innerText = currentScoreA;
+      document.getElementById('scoreB').innerText = currentScoreB;
+    }
+
+    function adjustScore(team, amount) {
+      if (team === 'A') {
+        currentScoreA = Math.max(0, currentScoreA + amount);
+      } else {
+        currentScoreB = Math.max(0, currentScoreB + amount);
+      }
+      socket.emit('updateScore', { courtId, scoreA: currentScoreA, scoreB: currentScoreB });
+    }
+
+    function submitFinishMatch() {
+      const teamA = document.getElementById('teamAName').innerText;
+      const teamB = document.getElementById('teamBName').innerText;
+      
+      if (confirm(`Are you sure you want to finish the match for Court ${courtId}?\n\nFinal Score:\n${teamA}: ${currentScoreA}\n${teamB}: ${currentScoreB}`)) {
+        socket.emit('finishMatch', { courtId });
+      }
     }
   </script>
 </body>
