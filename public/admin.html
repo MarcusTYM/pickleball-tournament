@@ -60,10 +60,6 @@
     button.btn-danger { background: #dc2626; }
     button.btn-danger:hover { background: #b91c1c; }
 
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-    th, td { border: 1px solid var(--border-color); padding: 8px 10px; text-align: left; font-size: 13px; }
-    th { background: #334155; }
-
     .court-control {
       border: 1px solid var(--border-color);
       padding: 15px;
@@ -71,18 +67,6 @@
       background: #162032;
       margin-bottom: 15px;
     }
-
-    .badge {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 10px;
-      font-size: 11px;
-      font-weight: bold;
-    }
-    .badge-upcoming { background: #3b82f6; color: white; }
-    .badge-live { background: #22c55e; color: white; }
-    .badge-finished { background: #64748b; color: white; }
-    .badge-waiting { background: #f59e0b; color: white; }
   </style>
 </head>
 <body>
@@ -100,9 +84,6 @@
         <label>Number of Groups:</label>
         <input type="number" id="numGroups" value="3" min="2" max="6" />
 
-        <label>Court Names (comma-separated):</label>
-        <input type="text" id="courtNames" value="Court 1, Court 2, Court 3" placeholder="e.g. Court A, Court B, Main Court" />
-
         <button onclick="setupTournament()">Initialize / Re-generate Tournament</button>
         <button class="btn-danger" onclick="resetTournament()" style="margin-top: 5px;">Reset All Data</button>
       </div>
@@ -119,7 +100,11 @@
   <!-- Active Courts Control -->
   <div class="card">
     <h2>Live Court Score Control</h2>
-    <div class="grid-2" id="courtControlsContainer"></div>
+    <div class="grid-2">
+      <div class="court-control" id="court1Control"></div>
+      <div class="court-control" id="court2Control"></div>
+      <div class="court-control" id="court3Control"></div>
+    </div>
   </div>
 
   <!-- Match Scheduler -->
@@ -132,7 +117,11 @@
       </div>
       <div>
         <label>Assign to Court:</label>
-        <select id="courtSelect"></select>
+        <select id="courtSelect">
+          <option value="1">Court 1</option>
+          <option value="2">Court 2</option>
+          <option value="3">Court 3</option>
+        </select>
       </div>
     </div>
     <button onclick="assignMatch()">Start Match on Selected Court</button>
@@ -154,8 +143,7 @@
     function setupTournament() {
       const numTeams = document.getElementById('numTeams').value;
       const numGroups = document.getElementById('numGroups').value;
-      const courtNames = document.getElementById('courtNames').value;
-      socket.emit('setupTournament', { numTeams, numGroups, courtNames });
+      socket.emit('setupTournament', { numTeams, numGroups });
     }
 
     function resetTournament() {
@@ -170,28 +158,26 @@
 
     function assignMatch() {
       const matchId = parseInt(document.getElementById('matchSelect').value);
-      const courtId = document.getElementById('courtSelect').value;
+      const courtId = parseInt(document.getElementById('courtSelect').value);
       if (matchId && courtId) {
         socket.emit('assignMatch', { matchId, courtId });
       }
     }
 
     function updateScore(courtId) {
-      const safeId = courtId.replace(/\s+/g, '-');
-      const scoreA = parseInt(document.getElementById(`scoreA-${safeId}`).value) || 0;
-      const scoreB = parseInt(document.getElementById(`scoreB-${safeId}`).value) || 0;
+      const scoreA = parseInt(document.getElementById(`scoreA-${courtId}`).value) || 0;
+      const scoreB = parseInt(document.getElementById(`scoreB-${courtId}`).value) || 0;
       socket.emit('updateScore', { courtId, scoreA, scoreB });
     }
 
     function finishMatch(courtId) {
-      if (confirm(`Finish match on ${courtId}?`)) {
+      if (confirm(`Finish match on Court ${courtId}?`)) {
         socket.emit('finishMatch', { courtId });
       }
     }
 
     function saveTeamName(group, teamId) {
-      const safeId = teamId.replace(/\s+/g, '-');
-      const newName = document.getElementById(`team-input-${safeId}`).value;
+      const newName = document.getElementById(`team-input-${teamId}`).value;
       if (newName) {
         socket.emit('updateTeamName', { group, teamId, newName });
       }
@@ -201,36 +187,27 @@
       if (!data) return;
       const { tournament, activeCourts } = data;
 
-      // Render Court Controllers
-      let courtControlsHtml = '';
-      let courtOptionsHtml = '';
-      const courtKeys = Object.keys(activeCourts || {});
-
-      courtKeys.forEach(cName => {
-        const c = activeCourts[cName];
-        const safeId = cName.replace(/\s+/g, '-');
-        courtOptionsHtml += `<option value="${cName}">${cName}</option>`;
-
-        courtControlsHtml += `
-          <div class="court-control">
-            <h3 style="color: #f87171; margin-bottom: 8px;">${cName}</h3>
+      // Render Court Controls
+      for (let i = 1; i <= 3; i++) {
+        const c = activeCourts[i];
+        const container = document.getElementById(`court${i}Control`);
+        if (c && container) {
+          container.innerHTML = `
+            <h3 style="color: #f87171; margin-bottom: 8px;">Court ${i}</h3>
             ${c.matchId ? `
               <div style="font-size: 14px; margin-bottom: 10px;">
                 <strong>${c.teamA}</strong> vs <strong>${c.teamB}</strong>
               </div>
               <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
-                <input type="number" id="scoreA-${safeId}" value="${c.scoreA}" min="0" />
+                <input type="number" id="scoreA-${i}" value="${c.scoreA}" min="0" />
                 <span>:</span>
-                <input type="number" id="scoreB-${safeId}" value="${c.scoreB}" min="0" />
+                <input type="number" id="scoreB-${i}" value="${c.scoreB}" min="0" />
               </div>
-              <button onclick="updateScore('${cName}')">Update Live Score</button>
-              <button class="btn-danger" onclick="finishMatch('${cName}')" style="margin-top: 5px;">Finish Match</button>
-            ` : '<p style="color: #64748b; font-style: italic; margin: 0;">Court Available</p>'}
-          </div>`;
-      });
-
-      document.getElementById('courtControlsContainer').innerHTML = courtControlsHtml || '<p style="color: #94a3b8;">No courts available.</p>';
-      document.getElementById('courtSelect').innerHTML = courtOptionsHtml;
+              <button onclick="updateScore(${i})">Update Live Score</button>
+              <button class="btn-danger" onclick="finishMatch(${i})" style="margin-top: 5px;">Finish Match</button>
+            ` : '<p style="color: #64748b; font-style: italic; margin: 0;">Court Available</p>'}`;
+        }
+      }
 
       // Render Match Options for Assignment
       let matchOptionsHtml = '';
@@ -252,10 +229,9 @@
         Object.keys(tournament.groups).forEach(g => {
           teamEditorsHtml += `<div style="background: #162032; padding: 12px; border-radius: 8px;"><h4 style="margin: 0 0 10px 0;">Group ${g}</h4>`;
           tournament.groups[g].forEach(t => {
-            const safeId = t.id.replace(/\s+/g, '-');
             teamEditorsHtml += `
               <div style="display: flex; gap: 8px; margin-bottom: 6px;">
-                <input type="text" id="team-input-${safeId}" value="${t.name}" style="margin:0;" />
+                <input type="text" id="team-input-${t.id}" value="${t.name}" style="margin:0;" />
                 <button onclick="saveTeamName('${g}', '${t.id}')" style="width: 80px; margin:0;">Save</button>
               </div>`;
           });
