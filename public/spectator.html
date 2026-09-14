@@ -84,6 +84,15 @@
     .match-item:nth-child(odd) { background-color: var(--card-bg); }
     .match-item:hover { background-color: #2a3a52 !important; }
     .match-item:last-child { border-bottom: none; }
+
+    .podium-box {
+      background: linear-gradient(135deg, #1e293b, #0f172a);
+      border: 2px solid #f59e0b;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 15px;
+    }
+    .podium-row { font-size: 15px; font-weight: bold; padding: 6px 0; }
   </style>
 </head>
 <body>
@@ -99,6 +108,7 @@
   <div class="grid-3" id="courtsContainer"></div>
 
   <h2>Knockout Stage</h2>
+  <div id="podiumContainer"></div>
   <div class="card" style="padding: 0; overflow: hidden;">
     <div id="knockoutMatchesContainer"></div>
   </div>
@@ -141,9 +151,27 @@
       }
       document.getElementById('courtsContainer').innerHTML = courtsHtml;
 
-      // Render Knockout Stage
+      // Render Knockout Stage & Winners
       if (tournament.knockout && tournament.knockout.generated) {
         let koHtml = '';
+        const finalMatch = tournament.knockout.matches.find(m => m.id === 104);
+        const playoffMatch = tournament.knockout.matches.find(m => m.id === 103);
+
+        // Podium Display
+        let podiumHtml = '';
+        if (finalMatch && finalMatch.winner) {
+          podiumHtml = `
+            <div class="podium-box">
+              <div class="podium-row" style="color: #f59e0b;">🏆 Champion (1st Place): ${finalMatch.winner}</div>
+              <div class="podium-row" style="color: #cbd5e1;">🥈 1st Runner-up (2nd Place): ${finalMatch.loser}</div>
+              ${playoffMatch && playoffMatch.winner ? `
+                <div class="podium-row" style="color: #b45309;">🥉 2nd Runner-up (3rd Place): ${playoffMatch.winner}</div>
+                <div class="podium-row" style="color: #94a3b8;">🎖️ 3rd Runner-up (4th Place): ${playoffMatch.loser}</div>
+              ` : ''}
+            </div>`;
+        }
+        document.getElementById('podiumContainer').innerHTML = podiumHtml;
+
         tournament.knockout.matches.forEach(m => {
           koHtml += `
             <div class="match-item">
@@ -158,6 +186,7 @@
         });
         document.getElementById('knockoutMatchesContainer').innerHTML = koHtml;
       } else {
+        document.getElementById('podiumContainer').innerHTML = '';
         document.getElementById('knockoutMatchesContainer').innerHTML = '<p style="color: #94a3b8; text-align: center; padding: 15px; margin: 0;">Round-Robin stage in progress. Knockout bracket will appear once finalized!</p>';
       }
 

@@ -141,9 +141,10 @@ io.on('connection', (socket) => {
     tournament.knockout = {
       generated: true,
       matches: [
-        { id: 101, label: 'Semifinal 1', teamA: topTeams[0].name, teamB: topTeams[3].name, scoreA: 0, scoreB: 0, status: 'UPCOMING', court: null, winner: null },
-        { id: 102, label: 'Semifinal 2', teamA: topTeams[1].name, teamB: topTeams[2].name, scoreA: 0, scoreB: 0, status: 'UPCOMING', court: null, winner: null },
-        { id: 103, label: 'Championship Final', teamA: 'Winner Semi 1', teamB: 'Winner Semi 2', scoreA: 0, scoreB: 0, status: 'WAITING', court: null, winner: null }
+        { id: 101, label: 'Semifinal 1', teamA: topTeams[0].name, teamB: topTeams[3].name, scoreA: 0, scoreB: 0, status: 'UPCOMING', court: null, winner: null, loser: null },
+        { id: 102, label: 'Semifinal 2', teamA: topTeams[1].name, teamB: topTeams[2].name, scoreA: 0, scoreB: 0, status: 'UPCOMING', court: null, winner: null, loser: null },
+        { id: 103, label: '3rd Place Playoff', teamA: 'Loser Semi 1', teamB: 'Loser Semi 2', scoreA: 0, scoreB: 0, status: 'WAITING', court: null, winner: null, loser: null },
+        { id: 104, label: 'Championship Final', teamA: 'Winner Semi 1', teamB: 'Winner Semi 2', scoreA: 0, scoreB: 0, status: 'WAITING', court: null, winner: null, loser: null }
       ]
     };
 
@@ -239,14 +240,23 @@ io.on('connection', (socket) => {
         }
       } else {
         match.winner = court.scoreA > court.scoreB ? match.teamA : match.teamB;
+        match.loser = court.scoreA > court.scoreB ? match.teamB : match.teamA;
+
         const semi1 = tournament.knockout.matches.find(m => m.id === 101);
         const semi2 = tournament.knockout.matches.find(m => m.id === 102);
-        const finalMatch = tournament.knockout.matches.find(m => m.id === 103);
+        const playoffMatch = tournament.knockout.matches.find(m => m.id === 103);
+        const finalMatch = tournament.knockout.matches.find(m => m.id === 104);
 
         if (semi1.winner) finalMatch.teamA = semi1.winner;
         if (semi2.winner) finalMatch.teamB = semi2.winner;
+        if (semi1.loser) playoffMatch.teamA = semi1.loser;
+        if (semi2.loser) playoffMatch.teamB = semi2.loser;
+
         if (semi1.winner && semi2.winner && finalMatch.status === 'WAITING') {
           finalMatch.status = 'UPCOMING';
+        }
+        if (semi1.loser && semi2.loser && playoffMatch.status === 'WAITING') {
+          playoffMatch.status = 'UPCOMING';
         }
       }
     }
