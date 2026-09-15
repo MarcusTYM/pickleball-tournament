@@ -115,7 +115,7 @@
       display: inline-block; 
       vertical-align: middle; 
       font-weight: 700; 
-      font-size: 15px; 
+      font-size: 14px; 
       line-height: 1.2; 
     }
     .badge-live { background: #22c55e; color: white; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; }
@@ -223,11 +223,18 @@
 
     function formatName(name) {
       if (!name) return '';
-      const firstSpaceIndex = name.indexOf(' ');
-      if (firstSpaceIndex === -1) return name;
-      const firstPart = name.slice(0, firstSpaceIndex);
-      const secondPart = name.slice(firstSpaceIndex + 1).replace(/ /g, '\u00A0');
-      return `${firstPart}\n${secondPart}`;
+      
+      if (name.includes('/')) return name.split('/').map(s => s.trim().replace(/ /g, '\u00A0')).join('\n');
+      if (name.includes('&')) return name.split('&').map(s => s.trim().replace(/ /g, '\u00A0')).join('\n');
+      
+      const parts = name.trim().split(/\s+/);
+      if (parts.length > 1) {
+        const player1 = parts[0];
+        const player2 = parts.slice(1).join('\u00A0');
+        return `${player1}\n${player2}`;
+      }
+      
+      return name;
     }
 
     socket.on('initData', renderAll);
