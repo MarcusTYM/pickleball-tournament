@@ -11,7 +11,7 @@ const io = new Server(server, { cors: { origin: "*" } });
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'spectator.html'));
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 app.get('/spectator', (req, res) => {
@@ -186,9 +186,29 @@ function updateStandings() {
   });
 }
 
+// Generate Knockout Stage
+function generateKnockoutBracket() {
+  updateStandings();
+  const topTeams = [];
+  Object.keys(tournament.groups).forEach(g => {
+    if (tournament.groups[g][0]) topTeams.push(tournament.groups[g][0].name);
+    if (tournament.groups[g][1]) topTeams.push(tournament.groups[g][1].name);
+  });
+
+  const matches = [
+    { id: 101, label: 'Semifinal 1', teamA: topTeams[0] || 'Top Group A', teamB: topTeams[3] || 'Runner-Up Group B', scoreA: 0, scoreB: 0, status: 'READY', winner: null, loser: null },
+    { id: 102, label: 'Semifinal 2', teamA: topTeams[2] || 'Top Group B', teamB: topTeams[1] || 'Runner-Up Group A', scoreA: 0, scoreB: 0, status: 'READY', winner: null, loser: null },
+    { id: 103, label: '3rd Place Playoff', teamA: 'Loser SF1', teamB: 'Loser SF2', scoreA: 0, scoreB: 0, status: 'WAITING', winner: null, loser: null },
+    { id: 104, label: 'Finals (1st/2nd)', teamA: 'Winner SF1', teamB: 'Winner SF2', scoreA: 0, scoreB: 0, status: 'WAITING', winner: null, loser: null }
+  ];
+
+  tournament.knockout = { generated: true, matches };
+}
+
 // Socket.IO Connections
 io.on('connection', (socket) => {
-  socket.emit('init', { tournament, activeCourts });
+  // Emit state on initial connection
+  socket.emit('initData', { tournament, activeCourts });
 
   socket.on('setupTournament', async ({ numTeams, numGroups }) => {
     tournament = createTournament(numTeams, numGroups);
@@ -198,7 +218,7 @@ io.on('connection', (socket) => {
       6: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0, startedAt: null }
     };
     await saveData();
-    io.emit('update', { tournament, activeCourts });
+    io.emit('stateUpdated', { tournament, activeCourts });
   });
 
   socket.on('updateTeamName', async ({ group, teamId, newName }) => {
@@ -213,13 +233,20 @@ io.on('connection', (socket) => {
           }
         });
         await saveData();
-        io.emit('update', { tournament, activeCourts });
+        io.emit('stateUpdated', { tournament, activeCourts });
       }
     }
   });
 
-  socket.on('assignMatch', async ({ courtNum, matchId }) => {
-    const match = tournament.schedule.find(m => m.id === matchId);
+  socket.on('assignMatch', async (data) => {
+    const matchId = data.matchId;
+    const courtNum = data.courtId || data.courtNum;
+
+    let match = tournament.schedule.find(m => m.id === matchId);
+    if (!match && tournament.knockout && tournament.knockout.matches) {
+      match = tournament.knockout.matches.find(m => m.id === matchId);
+    }
+
     if (match) {
       match.status = 'IN_PROGRESS';
       match.court = courtNum;
@@ -232,28 +259,46 @@ io.on('connection', (socket) => {
         startedAt: Date.now()
       };
       await saveData();
-      io.emit('update', { tournament, activeCourts });
+      io.emit('stateUpdated', { tournament, activeCourts });
     }
   });
 
-  socket.on('updateScore', async ({ courtNum, scoreA, scoreB }) => {
+  socket.on('updateScore', async (data) => {
+    const courtNum = data.courtId || data.courtNum;
+    const scoreA = data.scoreA;
+    const scoreB = data.scoreB;
+
     if (activeCourts[courtNum]) {
       activeCourts[courtNum].scoreA = scoreA;
       activeCourts[courtNum].scoreB = scoreB;
-      const match = tournament.schedule.find(m => m.id === activeCourts[courtNum].matchId);
+
+      let match = tournament.schedule.find(m => m.id === activeCourts[courtNum].matchId);
+      if (!match && tournament.knockout && tournament.knockout.matches) {
+        match = tournament.knockout.matches.find(m => m.id === activeCourts[courtNum].matchId);
+      }
       if (match) {
         match.scoreA = scoreA;
         match.scoreB = scoreB;
       }
       await saveData();
-      io.emit('update', { tournament, activeCourts });
+      io.emit('stateUpdated', { tournament, activeCourts });
+      io.emit('scoreUpdated', { courtId: courtNum, scoreA, scoreB });
     }
   });
 
-  socket.on('finishMatch', async ({ courtNum }) => {
+  socket.on('finishMatch', async (data) => {
+    const courtNum = data.courtId || data.courtNum;
     const court = activeCourts[courtNum];
+
     if (court && court.matchId) {
-      const match = tournament.schedule.find(m => m.id === court.matchId);
+      let match = tournament.schedule.find(m => m.id === court.matchId);
+      let isKnockout = false;
+
+      if (!match && tournament.knockout && tournament.knockout.matches) {
+        match = tournament.knockout.matches.find(m => m.id === court.matchId);
+        isKnockout = true;
+      }
+
       if (match) {
         match.status = 'COMPLETED';
         match.scoreA = court.scoreA;
@@ -262,12 +307,49 @@ io.on('connection', (socket) => {
           const durationMin = Math.round((Date.now() - court.startedAt) / 60000);
           match.duration = `${durationMin} mins`;
         }
+
+        if (isKnockout) {
+          const winner = match.scoreA > match.scoreB ? match.teamA : match.teamB;
+          const loser = match.scoreA > match.scoreB ? match.teamB : match.teamA;
+          match.winner = winner;
+          match.loser = loser;
+
+          // Update Finals / 3rd Place dependencies
+          if (match.id === 101) {
+            const sf2 = tournament.knockout.matches.find(m => m.id === 102);
+            const finals = tournament.knockout.matches.find(m => m.id === 104);
+            const playoff = tournament.knockout.matches.find(m => m.id === 103);
+            if (finals) finals.teamA = winner;
+            if (playoff) playoff.teamA = loser;
+            if (sf2 && sf2.winner) {
+              if (finals) finals.status = 'READY';
+              if (playoff) playoff.status = 'READY';
+            }
+          } else if (match.id === 102) {
+            const sf1 = tournament.knockout.matches.find(m => m.id === 101);
+            const finals = tournament.knockout.matches.find(m => m.id === 104);
+            const playoff = tournament.knockout.matches.find(m => m.id === 103);
+            if (finals) finals.teamB = winner;
+            if (playoff) playoff.teamB = loser;
+            if (sf1 && sf1.winner) {
+              if (finals) finals.status = 'READY';
+              if (playoff) playoff.status = 'READY';
+            }
+          }
+        }
       }
+
       activeCourts[courtNum] = { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0, startedAt: null };
       updateStandings();
       await saveData();
-      io.emit('update', { tournament, activeCourts });
+      io.emit('stateUpdated', { tournament, activeCourts });
     }
+  });
+
+  socket.on('generateKnockout', async () => {
+    generateKnockoutBracket();
+    await saveData();
+    io.emit('stateUpdated', { tournament, activeCourts });
   });
 
   socket.on('resetTournament', async () => {
@@ -278,7 +360,7 @@ io.on('connection', (socket) => {
       6: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0, startedAt: null }
     };
     await saveData();
-    io.emit('update', { tournament, activeCourts });
+    io.emit('stateUpdated', { tournament, activeCourts });
   });
 });
 
