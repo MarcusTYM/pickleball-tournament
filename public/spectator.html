@@ -61,7 +61,6 @@
     .court-label { color: #94a3b8; font-size: 14px; font-weight: 700; text-transform: uppercase; margin-bottom: 8px; }
     .timer-badge { font-size: 13px; font-weight: 700; color: #38bdf8; background: #0f172a; padding: 3px 10px; border-radius: 12px; display: inline-block; margin-bottom: 10px; border: 1px solid var(--border-color); }
     
-    /* Side-by-side score display */
     .matchup-container {
       display: flex;
       align-items: flex-start;
@@ -111,9 +110,17 @@
     th { background: var(--primary-red); color: white; font-weight: 700; text-transform: uppercase; font-size: 12px; }
     tr:nth-child(even) { background: #162032; }
     
-    .multiline-name { white-space: pre-line; display: inline-block; font-weight: 600; font-size: 15px; }
+    .multiline-name { 
+      white-space: pre-line; 
+      display: inline-block; 
+      vertical-align: middle; 
+      font-weight: 700; 
+      font-size: 15px; 
+      line-height: 1.2; 
+    }
     .badge-live { background: #22c55e; color: white; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; }
-    
+    .badge-paused { background: #f59e0b; color: white; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; }
+
     .match-item {
       display: flex;
       justify-content: space-between;
@@ -130,11 +137,20 @@
     .podium-box {
       background: linear-gradient(135deg, #1e293b, #0f172a);
       border: 2px solid #f59e0b;
-      padding: 15px;
+      padding: 18px;
       border-radius: 10px;
       margin-bottom: 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
     }
-    .podium-row { font-size: 15px; font-weight: bold; padding: 6px 0; }
+    .podium-row { 
+      font-size: 15px; 
+      font-weight: bold; 
+      display: flex; 
+      align-items: center; 
+      gap: 10px; 
+    }
   </style>
 </head>
 <body>
@@ -167,6 +183,11 @@
     const socket = io();
     let currentCourts = {};
 
+    function formatName(name) {
+      if (!name) return '';
+      return name.replace(' ', '\n');
+    }
+
     socket.on('initData', renderAll);
     socket.on('stateUpdated', renderAll);
     socket.on('scoreUpdated', ({ courtId, scoreA, scoreB }) => {
@@ -179,13 +200,16 @@
     setInterval(() => {
       [4, 5, 6].forEach(i => {
         const c = currentCourts[i];
-        if (c && c.matchId && c.startedAt) {
+        if (c && c.matchId) {
           const timerEl = document.getElementById(`c${i}-timer`);
           if (timerEl) {
-            const elapsed = Math.floor((Date.now() - c.startedAt) / 1000);
+            let elapsed = c.elapsedTime || 0;
+            if (!c.isPaused && c.startedAt) {
+              elapsed += Math.floor((Date.now() - c.startedAt) / 1000);
+            }
             const mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
             const secs = String(elapsed % 60).padStart(2, '0');
-            timerEl.innerText = `⏱ ${mins}:${secs}`;
+            timerEl.innerText = c.isPaused ? `⏸ ${mins}:${secs}` : `⏱ ${mins}:${secs}`;
           }
         }
       });
@@ -196,7 +220,6 @@
       const { tournament, activeCourts } = data;
       currentCourts = activeCourts || {};
 
-      // Render Courts 4, 5, and 6 with Side-by-Side Teams & Scores
       let courtsHtml = '';
       [4, 5, 6].forEach(i => {
         const c = currentCourts[i];
@@ -207,36 +230,43 @@
               <div class="timer-badge" id="c${i}-timer">⏱ 00:00</div>
               <div class="matchup-container">
                 <div class="team-side">
-                  <div class="team-name-display">${c.teamA}</div>
+                  <div class="team-name-display">${formatName(c.teamA)}</div>
                   <div class="score-number" id="c${i}-scoreA">${c.scoreA}</div>
                 </div>
                 <div class="score-divider">-</div>
                 <div class="team-side">
-                  <div class="team-name-display">${c.teamB}</div>
+                  <div class="team-name-display">${formatName(c.teamB)}</div>
                   <div class="score-number" id="c${i}-scoreB">${c.scoreB}</div>
                 </div>
               </div>
-              <span class="badge-live">MATCH IN PROGRESS</span>
+              <span class="${c.isPaused ? 'badge-paused' : 'badge-live'}">${c.isPaused ? 'MATCH PAUSED' : 'MATCH IN PROGRESS'}</span>
             ` : '<div style="color: #64748b; margin: 35px 0; font-style: italic;">Court Available</div>'}
           </div>`;
       });
       document.getElementById('courtsContainer').innerHTML = courtsHtml;
 
-      // Render Knockout Stage & Winners
       if (tournament.knockout && tournament.knockout.generated) {
         let koHtml = '';
         const finalMatch = tournament.knockout.matches.find(m => m.id === 104);
         const playoffMatch = tournament.knockout.matches.find(m => m.id === 103);
 
-        // Podium Display
         let podiumHtml = '';
         if (finalMatch && finalMatch.winner) {
           podiumHtml = `
             <div class="podium-box">
-              <div class="podium-row" style="color: #f59e0b;">🏆 Champion (1st Place): ${finalMatch.winner}</div>
-              <div class="podium-row" style="color: #cbd5e1;">🥈 1st Runner-up (2nd Place): ${finalMatch.loser}</div>
+              <div class="podium-row" style="color: #f59e0b;">
+                <span>🏆 Champion (1st Place):</span> 
+                <span class="multiline-name" style="color: #f59e0b;">${formatName(finalMatch.winner)}</span>
+              </div>
+              <div class="podium-row" style="color: #cbd5e1;">
+                <span>🥈 1st Runner-up (2nd Place):</span> 
+                <span class="multiline-name" style="color: #cbd5e1;">${formatName(finalMatch.loser)}</span>
+              </div>
               ${playoffMatch && playoffMatch.winner ? `
-                <div class="podium-row" style="color: #b45309;">🥉 2nd Runner-up (3rd Place): ${playoffMatch.winner}</div>
+                <div class="podium-row" style="color: #b45309;">
+                  <span>🥉 2nd Runner-up (3rd Place):</span> 
+                  <span class="multiline-name" style="color: #b45309;">${formatName(playoffMatch.winner)}</span>
+                </div>
               ` : ''}
             </div>`;
         }
@@ -245,13 +275,19 @@
         tournament.knockout.matches.forEach(m => {
           koHtml += `
             <div class="match-item">
-              <span>
-                <strong style="color: #f87171; margin-right: 8px;">${m.label}:</strong> 
-                <span class="multiline-name">${m.teamA}</span> vs <span class="multiline-name">${m.teamB}</span>
+              <span style="display: flex; align-items: center; gap: 8px;">
+                <strong style="color: #f87171; min-width: 140px;">${m.label}:</strong> 
+                <span class="multiline-name">${formatName(m.teamA)}</span> 
+                <span style="color: #64748b; font-weight: bold; margin: 0 4px;">vs</span> 
+                <span class="multiline-name">${formatName(m.teamB)}</span>
               </span>
-              <span>
-                ${m.duration ? `<span style="color: #38bdf8; font-size: 12px; margin-right: 10px;">⏱ ${m.duration}</span>` : ''}
-                ${m.winner ? `<strong style="color: #22c55e;">Winner: ${m.winner}</strong>` : `<em style="color: #94a3b8; font-size: 13px;">${m.status}</em>`}
+              <span style="display: flex; align-items: center; gap: 12px;">
+                ${m.duration ? `<span style="color: #38bdf8; font-size: 12px;">⏱ ${m.duration}</span>` : ''}
+                ${m.winner ? `
+                  <strong style="color: #22c55e; display: flex; align-items: center; gap: 6px;">
+                    Winner: <span class="multiline-name" style="color: #22c55e;">${formatName(m.winner)}</span>
+                  </strong>
+                ` : `<em style="color: #94a3b8; font-size: 13px;">${m.status}</em>`}
               </span>
             </div>`;
         });
@@ -261,7 +297,6 @@
         document.getElementById('knockoutMatchesContainer').innerHTML = '<p style="color: #94a3b8; text-align: center; padding: 15px; margin: 0;">Round-Robin stage in progress. Knockout bracket will appear once finalized!</p>';
       }
 
-      // Render Standings Tables
       let standingsHtml = '';
       if (tournament.groups) {
         Object.keys(tournament.groups).forEach(g => {
@@ -273,7 +308,7 @@
                 ${tournament.groups[g].map((p, idx) => `
                   <tr>
                     <td style="color: #94a3b8; font-weight: bold;">#${idx + 1}</td>
-                    <td><span class="multiline-name">${p.name}</span></td>
+                    <td><span class="multiline-name">${formatName(p.name)}</span></td>
                     <td style="color: #22c55e; font-weight: bold;">${p.wins}</td>
                     <td style="color: #ef4444;">${p.losses}</td>
                     <td style="font-weight: 500;">${p.diff > 0 ? '+' + p.diff : p.diff}</td>
