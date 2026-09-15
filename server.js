@@ -18,7 +18,7 @@ app.get('/spectator', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'spectator.html'));
 });
 
-// Redis initialization for state persistence
+// Redis initialization
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL || '',
   token: process.env.UPSTASH_REDIS_REST_TOKEN || ''
@@ -33,12 +33,11 @@ let tournament = {
 };
 
 let activeCourts = {
-  4: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0, startedAt: null },
-  5: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0, startedAt: null },
-  6: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0, startedAt: null }
+  4: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0, startedAt: null, isPaused: false, elapsedTime: 0 },
+  5: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0, startedAt: null, isPaused: false, elapsedTime: 0 },
+  6: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0, startedAt: null, isPaused: false, elapsedTime: 0 }
 };
 
-// Save state to Redis
 async function saveData() {
   try {
     if (process.env.UPSTASH_REDIS_REST_URL) {
@@ -49,7 +48,6 @@ async function saveData() {
   }
 }
 
-// Load state from Redis on startup
 async function loadInitialData() {
   try {
     if (process.env.UPSTASH_REDIS_REST_URL) {
@@ -66,13 +64,11 @@ async function loadInitialData() {
   }
 }
 
-// Round-Robin Generator with Rest Interval Interleaving
 function createTournament(numTeams, numGroups) {
   const groupNames = ['A', 'B', 'C', 'D', 'E', 'F'].slice(0, numGroups);
   const groups = {};
   groupNames.forEach(g => groups[g] = []);
 
-  // 1. Assign pairs evenly to groups
   for (let i = 1; i <= numTeams; i++) {
     const groupIndex = (i - 1) % numGroups;
     const gName = groupNames[groupIndex];
@@ -83,11 +79,10 @@ function createTournament(numTeams, numGroups) {
     });
   }
 
-  // 2. Generate balanced round-robin rounds per group using the Circle Method
   let groupRounds = {};
   groupNames.forEach(g => {
     let teams = [...groups[g]];
-    if (teams.length % 2 !== 0) teams.push(null); // Dummy for odd team counts
+    if (teams.length % 2 !== 0) teams.push(null);
 
     const numRounds = teams.length - 1;
     const half = teams.length / 2;
@@ -101,12 +96,10 @@ function createTournament(numTeams, numGroups) {
         if (tA && tB) roundMatches.push({ teamA: tA, teamB: tB, group: g });
       }
       groupRounds[g].push(roundMatches);
-      // Rotate teams (keep index 0 fixed)
       teams = [teams[0], teams[teams.length - 1], ...teams.slice(1, teams.length - 1)];
     }
   });
 
-  // 3. Interleave round matches across groups to maximize rest between games
   let schedule = [];
   let matchId = 1;
   const maxRounds = Math.max(...Object.values(groupRounds).map(r => r.length));
@@ -140,15 +133,10 @@ function createTournament(numTeams, numGroups) {
   };
 }
 
-// Recalculate Standings Table
 function updateStandings() {
   Object.keys(tournament.groups).forEach(g => {
     tournament.groups[g].forEach(t => {
-      t.wins = 0;
-      t.losses = 0;
-      t.pointsFor = 0;
-      t.pointsAgainst = 0;
-      t.diff = 0;
+      t.wins = 0; t.losses = 0; t.pointsFor = 0; t.pointsAgainst = 0; t.diff = 0;
     });
   });
 
@@ -181,23 +169,50 @@ function updateStandings() {
     });
     tournament.groups[g].sort((a, b) => {
       if (b.wins !== a.wins) return b.wins - a.wins;
-      return b.diff - a.diff;
+      if (b.diff !== a.diff) return b.diff - a.diff;
+      return (b.pointsFor || 0) - (a.pointsFor || 0);
     });
   });
 }
 
-// Generate Knockout Stage
 function generateKnockoutBracket() {
   updateStandings();
-  const topTeams = [];
+
+  const groupWinners = [];
+  const groupRunnersUp = [];
+
+  // Collect #1 and #2 teams from all active groups
   Object.keys(tournament.groups).forEach(g => {
-    if (tournament.groups[g][0]) topTeams.push(tournament.groups[g][0].name);
-    if (tournament.groups[g][1]) topTeams.push(tournament.groups[g][1].name);
+    if (tournament.groups[g][0]) groupWinners.push({ ...tournament.groups[g][0], group: g });
+    if (tournament.groups[g][1]) groupRunnersUp.push({ ...tournament.groups[g][1], group: g });
   });
 
+  // Sorting helper: Wins -> Point Difference -> Points For
+  const compareTeams = (a, b) => {
+    if (b.wins !== a.wins) return b.wins - a.wins;
+    if (b.diff !== a.diff) return b.diff - a.diff;
+    return (b.pointsFor || 0) - (a.pointsFor || 0);
+  };
+
+  groupWinners.sort(compareTeams);
+  groupRunnersUp.sort(compareTeams);
+
+  // Take all group winners first, then top runner-up(s) to reach 4 total teams
+  const qualified = [...groupWinners];
+  for (let i = 0; i < groupRunnersUp.length && qualified.length < 4; i++) {
+    qualified.push(groupRunnersUp[i]);
+  }
+
+  const team1 = qualified[0] ? qualified[0].name : 'Seed 1';
+  const team2 = qualified[1] ? qualified[1].name : 'Seed 2';
+  const team3 = qualified[2] ? qualified[2].name : 'Seed 3';
+  const team4 = qualified[3] ? qualified[3].name : 'Seed 4';
+
+  // Seed 1 vs Seed 4 (Best Winner vs Wildcard)
+  // Seed 2 vs Seed 3 (2nd Best Winner vs 3rd Best Winner)
   const matches = [
-    { id: 101, label: 'Semifinal 1', teamA: topTeams[0] || 'Top Group A', teamB: topTeams[3] || 'Runner-Up Group B', scoreA: 0, scoreB: 0, status: 'READY', winner: null, loser: null },
-    { id: 102, label: 'Semifinal 2', teamA: topTeams[2] || 'Top Group B', teamB: topTeams[1] || 'Runner-Up Group A', scoreA: 0, scoreB: 0, status: 'READY', winner: null, loser: null },
+    { id: 101, label: 'Semifinal 1', teamA: team1, teamB: team4, scoreA: 0, scoreB: 0, status: 'READY', winner: null, loser: null },
+    { id: 102, label: 'Semifinal 2', teamA: team2, teamB: team3, scoreA: 0, scoreB: 0, status: 'READY', winner: null, loser: null },
     { id: 103, label: '3rd Place Playoff', teamA: 'Loser SF1', teamB: 'Loser SF2', scoreA: 0, scoreB: 0, status: 'WAITING', winner: null, loser: null },
     { id: 104, label: 'Finals (1st/2nd)', teamA: 'Winner SF1', teamB: 'Winner SF2', scoreA: 0, scoreB: 0, status: 'WAITING', winner: null, loser: null }
   ];
@@ -205,17 +220,15 @@ function generateKnockoutBracket() {
   tournament.knockout = { generated: true, matches };
 }
 
-// Socket.IO Connections
 io.on('connection', (socket) => {
-  // Emit state on initial connection
   socket.emit('initData', { tournament, activeCourts });
 
   socket.on('setupTournament', async ({ numTeams, numGroups }) => {
     tournament = createTournament(numTeams, numGroups);
     activeCourts = {
-      4: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0, startedAt: null },
-      5: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0, startedAt: null },
-      6: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0, startedAt: null }
+      4: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0, startedAt: null, isPaused: false, elapsedTime: 0 },
+      5: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0, startedAt: null, isPaused: false, elapsedTime: 0 },
+      6: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0, startedAt: null, isPaused: false, elapsedTime: 0 }
     };
     await saveData();
     io.emit('stateUpdated', { tournament, activeCourts });
@@ -256,8 +269,30 @@ io.on('connection', (socket) => {
         teamB: match.teamB,
         scoreA: match.scoreA || 0,
         scoreB: match.scoreB || 0,
-        startedAt: Date.now()
+        startedAt: Date.now(),
+        isPaused: false,
+        elapsedTime: 0
       };
+      await saveData();
+      io.emit('stateUpdated', { tournament, activeCourts });
+    }
+  });
+
+  socket.on('togglePauseTimer', async (data) => {
+    const courtNum = data.courtId || data.courtNum;
+    const court = activeCourts[courtNum];
+    if (court && court.matchId) {
+      const now = Date.now();
+      if (!court.isPaused) {
+        if (court.startedAt) {
+          court.elapsedTime = (court.elapsedTime || 0) + Math.floor((now - court.startedAt) / 1000);
+        }
+        court.isPaused = true;
+        court.startedAt = null;
+      } else {
+        court.isPaused = false;
+        court.startedAt = now;
+      }
       await saveData();
       io.emit('stateUpdated', { tournament, activeCourts });
     }
@@ -303,10 +338,13 @@ io.on('connection', (socket) => {
         match.status = 'COMPLETED';
         match.scoreA = court.scoreA;
         match.scoreB = court.scoreB;
-        if (court.startedAt) {
-          const durationMin = Math.round((Date.now() - court.startedAt) / 60000);
-          match.duration = `${durationMin} mins`;
+        
+        let totalElapsedSec = court.elapsedTime || 0;
+        if (!court.isPaused && court.startedAt) {
+          totalElapsedSec += Math.floor((Date.now() - court.startedAt) / 1000);
         }
+        const durationMin = Math.max(1, Math.round(totalElapsedSec / 60));
+        match.duration = `${durationMin} mins`;
 
         if (isKnockout) {
           const winner = match.scoreA > match.scoreB ? match.teamA : match.teamB;
@@ -314,7 +352,6 @@ io.on('connection', (socket) => {
           match.winner = winner;
           match.loser = loser;
 
-          // Update Finals / 3rd Place dependencies
           if (match.id === 101) {
             const sf2 = tournament.knockout.matches.find(m => m.id === 102);
             const finals = tournament.knockout.matches.find(m => m.id === 104);
@@ -339,7 +376,7 @@ io.on('connection', (socket) => {
         }
       }
 
-      activeCourts[courtNum] = { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0, startedAt: null };
+      activeCourts[courtNum] = { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0, startedAt: null, isPaused: false, elapsedTime: 0 };
       updateStandings();
       await saveData();
       io.emit('stateUpdated', { tournament, activeCourts });
@@ -355,9 +392,9 @@ io.on('connection', (socket) => {
   socket.on('resetTournament', async () => {
     tournament = { initialized: false, groups: {}, schedule: [], knockout: { generated: false, matches: [] } };
     activeCourts = {
-      4: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0, startedAt: null },
-      5: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0, startedAt: null },
-      6: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0, startedAt: null }
+      4: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0, startedAt: null, isPaused: false, elapsedTime: 0 },
+      5: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0, startedAt: null, isPaused: false, elapsedTime: 0 },
+      6: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0, startedAt: null, isPaused: false, elapsedTime: 0 }
     };
     await saveData();
     io.emit('stateUpdated', { tournament, activeCourts });
