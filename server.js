@@ -18,11 +18,27 @@ app.get('/spectator', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'spectator.html'));
 });
 
+// Redis initialization for state persistence
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL || '',
   token: process.env.UPSTASH_REDIS_REST_TOKEN || ''
 });
 
+// State Management
+let tournament = { 
+  initialized: false, 
+  groups: {}, 
+  schedule: [], 
+  knockout: { generated: false, matches: [] } 
+};
+
+let activeCourts = {
+  4: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0, startedAt: null },
+  5: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0, startedAt: null },
+  6: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0, startedAt: null }
+};
+
+// Save state to Redis
 async function saveData() {
   try {
     if (process.env.UPSTASH_REDIS_REST_URL) {
@@ -33,18 +49,30 @@ async function saveData() {
   }
 }
 
-let tournament = { initialized: false, groups: {}, schedule: [], knockout: { generated: false, matches: [] } };
-let activeCourts = {
-  4: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0, startedAt: null },
-  5: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0, startedAt: null },
-  6: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0, startedAt: null }
-};
+// Load state from Redis on startup
+async function loadInitialData() {
+  try {
+    if (process.env.UPSTASH_REDIS_REST_URL) {
+      const data = await redis.get('tournament_state');
+      if (data) {
+        const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+        if (parsed.tournament) tournament = parsed.tournament;
+        if (parsed.activeCourts) activeCourts = parsed.activeCourts;
+        console.log("Successfully loaded state from Redis");
+      }
+    }
+  } catch (err) {
+    console.error("Error loading state from Redis:", err);
+  }
+}
 
+// Round-Robin Generator with Rest Interval Interleaving
 function createTournament(numTeams, numGroups) {
   const groupNames = ['A', 'B', 'C', 'D', 'E', 'F'].slice(0, numGroups);
   const groups = {};
   groupNames.forEach(g => groups[g] = []);
 
+  // 1. Assign pairs evenly to groups
   for (let i = 1; i <= numTeams; i++) {
     const groupIndex = (i - 1) % numGroups;
     const gName = groupNames[groupIndex];
@@ -55,25 +83,52 @@ function createTournament(numTeams, numGroups) {
     });
   }
 
-  let schedule = [];
-  let matchId = 1;
+  // 2. Generate balanced round-robin rounds per group using the Circle Method
+  let groupRounds = {};
   groupNames.forEach(g => {
-    const teams = groups[g];
-    for (let i = 0; i < teams.length; i++) {
-      for (let j = i + 1; j < teams.length; j++) {
-        schedule.push({
-          id: matchId++,
-          group: g,
-          teamAId: teams[i].id,
-          teamBId: teams[j].id,
-          teamA: teams[i].name,
-          teamB: teams[j].name,
-          scoreA: 0, scoreB: 0,
-          status: 'UPCOMING', court: null, duration: null
-        });
+    let teams = [...groups[g]];
+    if (teams.length % 2 !== 0) teams.push(null); // Dummy for odd team counts
+
+    const numRounds = teams.length - 1;
+    const half = teams.length / 2;
+    groupRounds[g] = [];
+
+    for (let r = 0; r < numRounds; r++) {
+      let roundMatches = [];
+      for (let i = 0; i < half; i++) {
+        const tA = teams[i];
+        const tB = teams[teams.length - 1 - i];
+        if (tA && tB) roundMatches.push({ teamA: tA, teamB: tB, group: g });
       }
+      groupRounds[g].push(roundMatches);
+      // Rotate teams (keep index 0 fixed)
+      teams = [teams[0], teams[teams.length - 1], ...teams.slice(1, teams.length - 1)];
     }
   });
+
+  // 3. Interleave round matches across groups to maximize rest between games
+  let schedule = [];
+  let matchId = 1;
+  const maxRounds = Math.max(...Object.values(groupRounds).map(r => r.length));
+
+  for (let r = 0; r < maxRounds; r++) {
+    groupNames.forEach(g => {
+      if (groupRounds[g][r]) {
+        groupRounds[g][r].forEach(m => {
+          schedule.push({
+            id: matchId++,
+            group: m.group,
+            teamAId: m.teamA.id,
+            teamBId: m.teamB.id,
+            teamA: m.teamA.name,
+            teamB: m.teamB.name,
+            scoreA: 0, scoreB: 0,
+            status: 'UPCOMING', court: null, duration: null
+          });
+        });
+      }
+    });
+  }
 
   return {
     initialized: true,
@@ -85,38 +140,134 @@ function createTournament(numTeams, numGroups) {
   };
 }
 
-async function loadInitialData() {
-  try {
-    if (process.env.UPSTASH_REDIS_REST_URL) {
-      const saved = await redis.get('tournament_state');
-      if (saved) {
-        const parsed = typeof saved === 'string' ? JSON.parse(saved) : saved;
-        tournament = parsed.tournament;
-        activeCourts = parsed.activeCourts || {
-          4: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0, startedAt: null },
-          5: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0, startedAt: null },
-          6: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0, startedAt: null }
-        };
+// Recalculate Standings Table
+function updateStandings() {
+  Object.keys(tournament.groups).forEach(g => {
+    tournament.groups[g].forEach(t => {
+      t.wins = 0;
+      t.losses = 0;
+      t.pointsFor = 0;
+      t.pointsAgainst = 0;
+      t.diff = 0;
+    });
+  });
+
+  tournament.schedule.forEach(m => {
+    if (m.status === 'COMPLETED') {
+      const g = m.group;
+      const teamA = tournament.groups[g].find(t => t.id === m.teamAId);
+      const teamB = tournament.groups[g].find(t => t.id === m.teamBId);
+
+      if (teamA && teamB) {
+        teamA.pointsFor += m.scoreA;
+        teamA.pointsAgainst += m.scoreB;
+        teamB.pointsFor += m.scoreB;
+        teamB.pointsAgainst += m.scoreA;
+
+        if (m.scoreA > m.scoreB) {
+          teamA.wins += 1;
+          teamB.losses += 1;
+        } else if (m.scoreB > m.scoreA) {
+          teamB.wins += 1;
+          teamA.losses += 1;
+        }
       }
     }
-  } catch (err) {
-    console.error("Failed to load Redis data:", err);
-  }
-}
-loadInitialData();
+  });
 
+  Object.keys(tournament.groups).forEach(g => {
+    tournament.groups[g].forEach(t => {
+      t.diff = t.pointsFor - t.pointsAgainst;
+    });
+    tournament.groups[g].sort((a, b) => {
+      if (b.wins !== a.wins) return b.wins - a.wins;
+      return b.diff - a.diff;
+    });
+  });
+}
+
+// Socket.IO Connections
 io.on('connection', (socket) => {
-  socket.emit('initData', { tournament, activeCourts });
+  socket.emit('init', { tournament, activeCourts });
 
   socket.on('setupTournament', async ({ numTeams, numGroups }) => {
-    tournament = createTournament(parseInt(numTeams), parseInt(numGroups));
+    tournament = createTournament(numTeams, numGroups);
     activeCourts = {
       4: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0, startedAt: null },
       5: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0, startedAt: null },
       6: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0, startedAt: null }
     };
     await saveData();
-    io.emit('stateUpdated', { tournament, activeCourts });
+    io.emit('update', { tournament, activeCourts });
+  });
+
+  socket.on('updateTeamName', async ({ group, teamId, newName }) => {
+    if (tournament.groups[group]) {
+      const team = tournament.groups[group].find(t => t.id === teamId);
+      if (team) {
+        team.name = newName;
+        tournament.schedule.forEach(m => {
+          if (m.group === group) {
+            if (m.teamAId === teamId) m.teamA = newName;
+            if (m.teamBId === teamId) m.teamB = newName;
+          }
+        });
+        await saveData();
+        io.emit('update', { tournament, activeCourts });
+      }
+    }
+  });
+
+  socket.on('assignMatch', async ({ courtNum, matchId }) => {
+    const match = tournament.schedule.find(m => m.id === matchId);
+    if (match) {
+      match.status = 'IN_PROGRESS';
+      match.court = courtNum;
+      activeCourts[courtNum] = {
+        matchId: match.id,
+        teamA: match.teamA,
+        teamB: match.teamB,
+        scoreA: match.scoreA || 0,
+        scoreB: match.scoreB || 0,
+        startedAt: Date.now()
+      };
+      await saveData();
+      io.emit('update', { tournament, activeCourts });
+    }
+  });
+
+  socket.on('updateScore', async ({ courtNum, scoreA, scoreB }) => {
+    if (activeCourts[courtNum]) {
+      activeCourts[courtNum].scoreA = scoreA;
+      activeCourts[courtNum].scoreB = scoreB;
+      const match = tournament.schedule.find(m => m.id === activeCourts[courtNum].matchId);
+      if (match) {
+        match.scoreA = scoreA;
+        match.scoreB = scoreB;
+      }
+      await saveData();
+      io.emit('update', { tournament, activeCourts });
+    }
+  });
+
+  socket.on('finishMatch', async ({ courtNum }) => {
+    const court = activeCourts[courtNum];
+    if (court && court.matchId) {
+      const match = tournament.schedule.find(m => m.id === court.matchId);
+      if (match) {
+        match.status = 'COMPLETED';
+        match.scoreA = court.scoreA;
+        match.scoreB = court.scoreB;
+        if (court.startedAt) {
+          const durationMin = Math.round((Date.now() - court.startedAt) / 60000);
+          match.duration = `${durationMin} mins`;
+        }
+      }
+      activeCourts[courtNum] = { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0, startedAt: null };
+      updateStandings();
+      await saveData();
+      io.emit('update', { tournament, activeCourts });
+    }
   });
 
   socket.on('resetTournament', async () => {
@@ -127,168 +278,13 @@ io.on('connection', (socket) => {
       6: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0, startedAt: null }
     };
     await saveData();
-    io.emit('stateUpdated', { tournament, activeCourts });
-  });
-
-  socket.on('generateKnockout', async () => {
-    const groupKeys = Object.keys(tournament.groups);
-    let topTeams = [];
-    
-    groupKeys.forEach(g => {
-      if (tournament.groups[g][0]) topTeams.push(tournament.groups[g][0]);
-    });
-
-    if (groupKeys.length === 3) {
-      const secondPlaces = groupKeys.map(g => tournament.groups[g][1]).filter(Boolean);
-      secondPlaces.sort((a, b) => b.wins - a.wins || b.diff - a.diff || b.pointsFor - a.pointsFor);
-      if (secondPlaces[0]) topTeams.push(secondPlaces[0]);
-    }
-
-    if (topTeams.length < 4) return;
-
-    tournament.knockout = {
-      generated: true,
-      matches: [
-        { id: 101, label: 'Semifinal 1', teamA: topTeams[0].name, teamB: topTeams[3].name, scoreA: 0, scoreB: 0, status: 'UPCOMING', court: null, winner: null, loser: null, duration: null },
-        { id: 102, label: 'Semifinal 2', teamA: topTeams[1].name, teamB: topTeams[2].name, scoreA: 0, scoreB: 0, status: 'UPCOMING', court: null, winner: null, loser: null, duration: null },
-        { id: 103, label: '3rd Place Playoff', teamA: 'Loser Semi 1', teamB: 'Loser Semi 2', scoreA: 0, scoreB: 0, status: 'WAITING', court: null, winner: null, loser: null, duration: null },
-        { id: 104, label: 'Championship Final', teamA: 'Winner Semi 1', teamB: 'Winner Semi 2', scoreA: 0, scoreB: 0, status: 'WAITING', court: null, winner: null, loser: null, duration: null }
-      ]
-    };
-
-    await saveData();
-    io.emit('stateUpdated', { tournament, activeCourts });
-  });
-
-  socket.on('updateTeamName', async ({ group, teamId, newName }) => {
-    const groupList = tournament.groups[group];
-    const team = groupList.find(t => t.id === teamId);
-    if (team) {
-      const oldName = team.name;
-      team.name = newName;
-      tournament.schedule.forEach(m => {
-        if (m.teamAId === teamId) m.teamA = newName;
-        if (m.teamBId === teamId) m.teamB = newName;
-      });
-      // Updated this loop to target courts 4, 5, 6
-      for (let c of [4, 5, 6]) {
-        if (activeCourts[c] && activeCourts[c].teamA === oldName) activeCourts[c].teamA = newName;
-        if (activeCourts[c] && activeCourts[c].teamB === oldName) activeCourts[c].teamB = newName;
-      }
-      await saveData();
-      io.emit('stateUpdated', { tournament, activeCourts });
-    }
-  });
-
-  socket.on('assignMatch', async ({ matchId, courtId }) => {
-    let match = tournament.schedule.find(m => m.id === matchId);
-    if (!match && tournament.knockout.generated) {
-      match = tournament.knockout.matches.find(m => m.id === matchId);
-    }
-    if (match && (match.status === 'UPCOMING' || match.status === 'READY')) {
-      match.status = 'LIVE';
-      match.court = courtId;
-      activeCourts[courtId] = {
-        matchId: match.id,
-        teamA: match.teamA,
-        teamB: match.teamB,
-        scoreA: 0,
-        scoreB: 0,
-        startedAt: Date.now()
-      };
-      await saveData();
-      io.emit('stateUpdated', { tournament, activeCourts });
-    }
-  });
-
-  socket.on('updateScore', async ({ courtId, scoreA, scoreB }) => {
-    if (activeCourts[courtId] && activeCourts[courtId].matchId) {
-      activeCourts[courtId].scoreA = scoreA;
-      activeCourts[courtId].scoreB = scoreB;
-      let match = tournament.schedule.find(m => m.id === activeCourts[courtId].matchId);
-      if (!match && tournament.knockout.generated) {
-        match = tournament.knockout.matches.find(m => m.id === activeCourts[courtId].matchId);
-      }
-      if (match) {
-        match.scoreA = scoreA;
-        match.scoreB = scoreB;
-      }
-      await saveData();
-      io.emit('scoreUpdated', { courtId, scoreA, scoreB });
-    }
-  });
-
-  socket.on('finishMatch', async ({ courtId }) => {
-    const court = activeCourts[courtId];
-    if (!court || !court.matchId) return;
-
-    let match = tournament.schedule.find(m => m.id === court.matchId);
-    let isKnockout = false;
-    if (!match && tournament.knockout.generated) {
-      match = tournament.knockout.matches.find(m => m.id === court.matchId);
-      isKnockout = true;
-    }
-
-    if (match) {
-      match.status = 'FINISHED';
-      match.scoreA = court.scoreA;
-      match.scoreB = court.scoreB;
-
-      if (court.startedAt) {
-        const elapsedSeconds = Math.floor((Date.now() - court.startedAt) / 1000);
-        const mins = Math.floor(elapsedSeconds / 60);
-        const secs = elapsedSeconds % 60;
-        match.duration = `${mins}m ${secs}s`;
-      }
-
-      if (!isKnockout) {
-        const groupList = tournament.groups[match.group];
-        const tA = groupList.find(t => t.id === match.teamAId);
-        const tB = groupList.find(t => t.id === match.teamBId);
-
-        if (tA && tB) {
-          tA.pointsFor += court.scoreA;
-          tA.pointsAgainst += court.scoreB;
-          tB.pointsFor += court.scoreB;
-          tB.pointsAgainst += court.scoreA;
-          tA.diff = tA.pointsFor - tA.pointsAgainst;
-          tB.diff = tB.pointsFor - tB.pointsAgainst;
-
-          if (court.scoreA > court.scoreB) {
-            tA.wins += 1; tB.losses += 1;
-          } else {
-            tB.wins += 1; tA.losses += 1;
-          }
-          groupList.sort((a, b) => b.wins - a.wins || b.diff - a.diff);
-        }
-      } else {
-        match.winner = court.scoreA > court.scoreB ? match.teamA : match.teamB;
-        match.loser = court.scoreA > court.scoreB ? match.teamB : match.teamA;
-
-        const semi1 = tournament.knockout.matches.find(m => m.id === 101);
-        const semi2 = tournament.knockout.matches.find(m => m.id === 102);
-        const playoffMatch = tournament.knockout.matches.find(m => m.id === 103);
-        const finalMatch = tournament.knockout.matches.find(m => m.id === 104);
-
-        if (semi1.winner) finalMatch.teamA = semi1.winner;
-        if (semi2.winner) finalMatch.teamB = semi2.winner;
-        if (semi1.loser) playoffMatch.teamA = semi1.loser;
-        if (semi2.loser) playoffMatch.teamB = semi2.loser;
-
-        if (semi1.winner && semi2.winner && finalMatch.status === 'WAITING') {
-          finalMatch.status = 'UPCOMING';
-        }
-        if (semi1.loser && semi2.loser && playoffMatch.status === 'WAITING') {
-          playoffMatch.status = 'UPCOMING';
-        }
-      }
-    }
-
-    activeCourts[courtId] = { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0, startedAt: null };
-    await saveData();
-    io.emit('stateUpdated', { tournament, activeCourts });
+    io.emit('update', { tournament, activeCourts });
   });
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+loadInitialData().then(() => {
+  server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+});

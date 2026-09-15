@@ -47,7 +47,7 @@
       letter-spacing: 0.5px;
     }
 
-    .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; }
     
     .court-card {
       background: var(--card-bg);
@@ -60,8 +60,49 @@
     }
     .court-label { color: #94a3b8; font-size: 14px; font-weight: 700; text-transform: uppercase; margin-bottom: 8px; }
     .timer-badge { font-size: 13px; font-weight: 700; color: #38bdf8; background: #0f172a; padding: 3px 10px; border-radius: 12px; display: inline-block; margin-bottom: 10px; border: 1px solid var(--border-color); }
-    .score-display { font-size: 52px; font-weight: 800; color: #ef4444; margin: 12px 0; font-variant-numeric: tabular-nums; }
     
+    /* Side-by-side score display */
+    .matchup-container {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin: 15px 0;
+      gap: 10px;
+    }
+    .team-side {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .team-name-display {
+      font-size: 15px;
+      font-weight: 700;
+      color: #ffffff;
+      text-align: center;
+      white-space: pre-line;
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1.2;
+    }
+    .score-number {
+      font-size: 48px;
+      font-weight: 800;
+      color: #ef4444;
+      margin-top: 6px;
+      font-variant-numeric: tabular-nums;
+    }
+    .score-divider {
+      font-size: 32px;
+      font-weight: 800;
+      color: #64748b;
+      align-self: flex-end;
+      margin-bottom: 8px;
+    }
+
     .tables-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; }
     .card { background: var(--card-bg); padding: 20px; border-radius: 10px; border: 1px solid var(--border-color); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
     
@@ -70,7 +111,7 @@
     th { background: var(--primary-red); color: white; font-weight: 700; text-transform: uppercase; font-size: 12px; }
     tr:nth-child(even) { background: #162032; }
     
-    .multiline-name { white-space: pre-line; display: inline-block; font-weight: 600; font-size: 16px; }
+    .multiline-name { white-space: pre-line; display: inline-block; font-weight: 600; font-size: 15px; }
     .badge-live { background: #22c55e; color: white; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; }
     
     .match-item {
@@ -99,11 +140,11 @@
 <body>
 
   <div class="brand-header">
-  <div class="brand-logo-card">
-    <img src="/logo.png" alt="Sanmina Logo" class="brand-logo" style="height: 70px;">
+    <div class="brand-logo-card">
+      <img src="/logo.png" alt="Sanmina Logo" class="brand-logo">
+    </div>
+    <h1>Live Tournament Scoreboard</h1>
   </div>
-  <h1>Live Tournament Scoreboard</h1>
-</div>
 
   <h2>Live Courts</h2>
   <div class="grid-3" id="courtsContainer"></div>
@@ -117,9 +158,9 @@
   <h2>Group Standings</h2>
   <div class="tables-container" id="standingsContainer"></div>
 
-<footer style="text-align: center; padding: 24px 10px; font-size: 13px; color: #64748b; margin-top: 50px; border-top: 1px solid #334155;">
-  <p>© 2026 Sanmina. All Rights Reserved.</p>
-</footer>
+  <footer style="text-align: center; padding: 24px 10px; font-size: 13px; color: #64748b; margin-top: 50px; border-top: 1px solid #334155;">
+    <p>© 2026 Sanmina. All Rights Reserved.</p>
+  </footer>
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
@@ -129,8 +170,10 @@
     socket.on('initData', renderAll);
     socket.on('stateUpdated', renderAll);
     socket.on('scoreUpdated', ({ courtId, scoreA, scoreB }) => {
-      const el = document.getElementById(`c${courtId}-score`);
-      if (el) el.innerText = `${scoreA} - ${scoreB}`;
+      const elA = document.getElementById(`c${courtId}-scoreA`);
+      const elB = document.getElementById(`c${courtId}-scoreB`);
+      if (elA) elA.innerText = scoreA;
+      if (elB) elB.innerText = scoreB;
     });
 
     setInterval(() => {
@@ -153,7 +196,7 @@
       const { tournament, activeCourts } = data;
       currentCourts = activeCourts || {};
 
-      // Render Courts 4, 5, and 6
+      // Render Courts 4, 5, and 6 with Side-by-Side Teams & Scores
       let courtsHtml = '';
       [4, 5, 6].forEach(i => {
         const c = currentCourts[i];
@@ -162,12 +205,17 @@
             <div class="court-label">Court ${i}</div>
             ${c && c.matchId ? `
               <div class="timer-badge" id="c${i}-timer">⏱ 00:00</div>
-              <div>
-                <span class="multiline-name">${c.teamA}</span>
-                <div style="color: #64748b; font-size: 13px; margin: 4px 0; font-weight: bold;">VS</div>
-                <span class="multiline-name">${c.teamB}</span>
+              <div class="matchup-container">
+                <div class="team-side">
+                  <div class="team-name-display">${c.teamA}</div>
+                  <div class="score-number" id="c${i}-scoreA">${c.scoreA}</div>
+                </div>
+                <div class="score-divider">-</div>
+                <div class="team-side">
+                  <div class="team-name-display">${c.teamB}</div>
+                  <div class="score-number" id="c${i}-scoreB">${c.scoreB}</div>
+                </div>
               </div>
-              <div class="score-display" id="c${i}-score">${c.scoreA} - ${c.scoreB}</div>
               <span class="badge-live">MATCH IN PROGRESS</span>
             ` : '<div style="color: #64748b; margin: 35px 0; font-style: italic;">Court Available</div>'}
           </div>`;
