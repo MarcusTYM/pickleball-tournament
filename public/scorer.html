@@ -208,9 +208,18 @@
     .coin-heads { background: linear-gradient(135deg, #fbbf24, #d97706); }
     .coin-tails { background: linear-gradient(135deg, #94a3b8, #475569); border-color: #cbd5e1; transform: rotateY(180deg); }
     
+    .instruction-text {
+      font-size: 14px;
+      font-weight: 700;
+      color: #64748b;
+      margin-top: 12px;
+      margin-bottom: 4px;
+      min-height: 20px;
+    }
+
     .btn-close-modal {
       display: none;
-      margin-top: 15px;
+      margin-top: 10px;
       width: 100%;
       padding: 10px;
       background: #0f172a;
@@ -278,6 +287,7 @@
         </div>
       </div>
       <div id="resultText" style="font-size: 16px; font-weight: 800; color: #0284c7; min-height: 24px;">Click the coin to flip!</div>
+      <div class="instruction-text" id="instructionText"></div>
       <button class="btn-close-modal" id="closeModalBtn" onclick="closeCoinModal()">Close</button>
     </div>
   </div>
@@ -362,15 +372,20 @@
       socket.emit('swapTeams', { courtId });
     }
 
-    /* CLICK-TO-FLIP COIN TOSS LOGIC */
-    let coinRotation = 0;
+    /* ACCURATE FLIP LOGIC */
+    let currentRotation = 0;
     let isFlipping = false;
 
     function openCoinModal() {
       document.getElementById('coinModal').style.display = 'flex';
       document.getElementById('modalTitle').innerText = 'Coin Toss';
       document.getElementById('resultText').innerText = 'Click the coin to flip!';
+      document.getElementById('instructionText').innerText = '';
       document.getElementById('closeModalBtn').style.display = 'block';
+      
+      // Reset coin orientation to HEADS facing front
+      currentRotation = 0;
+      document.getElementById('coinElement').style.transform = 'rotateY(0deg)';
       isFlipping = false;
     }
 
@@ -381,23 +396,29 @@
       const coin = document.getElementById('coinElement');
       const modalTitle = document.getElementById('modalTitle');
       const resultText = document.getElementById('resultText');
+      const instructionText = document.getElementById('instructionText');
       const closeBtn = document.getElementById('closeModalBtn');
 
       modalTitle.innerText = 'Flipping...';
       resultText.innerText = '';
+      instructionText.innerText = '';
       closeBtn.style.display = 'none';
 
       const isHeads = Math.random() < 0.5;
-      const extraSpins = 10 * 360; // Spins for 3 seconds
-      const targetDegree = isHeads ? extraSpins : extraSpins + 180;
+
+      // Ensure rotation starts from absolute baseline each time so faces stay aligned
+      // 3600 deg = 10 full spins
+      // HEADS = 3600 deg (0 mod 360) -> HEADS face shown
+      // TAILS = 3780 deg (180 mod 360) -> TAILS face shown
+      const targetDegree = isHeads ? 3600 : 3780;
       
-      coinRotation += targetDegree;
-      coin.style.transform = `rotateY(${coinRotation}deg)`;
+      coin.style.transform = `rotateY(${targetDegree}deg)`;
 
       setTimeout(() => {
         const winningSide = isHeads ? 'HEADS' : 'TAILS';
         modalTitle.innerText = `Result: ${winningSide}`;
         resultText.innerText = winningSide;
+        instructionText.innerText = 'Please choose side or serve';
         closeBtn.style.display = 'block';
         isFlipping = false;
       }, 3000);
