@@ -62,27 +62,30 @@
 
     /* Larger, Prominent Navigation Buttons */
     .nav-btn {
-      background: #f8fafc;
-      color: #1e293b;
-      border: 1.5px solid #cbd5e1;
-      padding: 10px 22px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 700;
-      font-size: 15px;
-      transition: all 0.2s ease-in-out;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-      display: inline-flex;
-      align-items: center;
-    }
+  background: #f8fafc;
+  color: #1e293b;
+  border: 1.5px solid #cbd5e1;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 14px;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 38px; /* Fixed height standard for all buttons */
+  box-sizing: border-box;
+}
 
-    .nav-btn:hover, .nav-btn:focus {
-      background: var(--primary-red);
-      border-color: var(--primary-red);
-      color: white;
-      transform: translateY(-2px);
-      box-shadow: 0 4px 10px rgba(225, 37, 27, 0.3);
-    }
+.nav-btn:hover, .nav-btn:focus {
+  background: var(--primary-red);
+  border-color: var(--primary-red);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(225, 37, 27, 0.3);
+}
 
     /* Floating Back To Top Button */
     .back-to-top-btn {
@@ -205,28 +208,30 @@
 
     <!-- STICKY NAVIGATION BAR WITH LARGER BUTTONS AND PADDLE ICON -->
 <div class="sticky-nav-panel">
-  <button class="nav-btn" onclick="scrollToSection('sec-live-courts')" style="display: inline-flex; align-items: center; min-height: 42px; box-sizing: border-box;">
-    <span style="display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; margin-right: 8px;">
-      <img src="paddle.png" alt="" style="height: 18px; width: auto; transform: rotate(45deg);">
+  <button class="nav-btn" onclick="scrollToSection('sec-live-courts')">
+    <span style="display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; margin-right: 6px;">
+      <img src="paddle.png" alt="" style="height: 15px; width: auto; transform: rotate(-45deg);">
     </span>
     <span>Live Courts</span>
   </button>
 
-  <button class="nav-btn" onclick="scrollToSection('sec-knockout')" style="display: inline-flex; align-items: center; min-height: 42px; box-sizing: border-box;">
-    <span style="font-size: 18px; line-height: 1; margin-right: 8px;">🏆</span>
+  <button class="nav-btn" onclick="scrollToSection('sec-knockout')">
+    <span style="font-size: 15px; line-height: 1; margin-right: 6px;">🏆</span>
     <span>Knockout Stage</span>
   </button>
 
-  <button class="nav-btn" onclick="scrollToSection('sec-standings')" style="display: inline-flex; align-items: center; min-height: 42px; box-sizing: border-box;">
-    <span style="font-size: 18px; line-height: 1; margin-right: 8px;">📊</span>
+  <button class="nav-btn" onclick="scrollToSection('sec-standings')">
+    <span style="font-size: 15px; line-height: 1; margin-right: 6px;">📊</span>
     <span>Group Standings</span>
   </button>
 
-  <button class="nav-btn" onclick="scrollToSection('sec-queue')" style="display: inline-flex; align-items: center; min-height: 42px; box-sizing: border-box;">
-    <span style="font-size: 18px; line-height: 1; margin-right: 8px;">📋</span>
+  <button class="nav-btn" onclick="scrollToSection('sec-queue')">
+    <span style="font-size: 15px; line-height: 1; margin-right: 6px;">📋</span>
     <span>Upcoming Queue</span>
   </button>
-</div>    <h2 id="sec-live-courts" class="scroll-target">
+</div>
+
+   <h2 id="sec-live-courts" class="scroll-target">
       <img src="paddle.png" alt="Paddle" style="height: 32px; width: auto; vertical-align: middle; transform: rotate(45deg); margin-right: 12px; display: inline-block;">
 
       Live Courts
