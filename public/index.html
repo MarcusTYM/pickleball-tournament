@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Live Tournament Scoreboard - Pickleball</title>
+  <title>Pickleball Tournament Host Controller</title>
   <style>
     :root {
       --primary-red: #e1251b;
@@ -25,12 +25,11 @@
       color: #ffffff;
     }
 
-    /* HEADER */
+    /* HEADER CARD */
     .header-card {
       display: flex;
       align-items: center;
-      justify-content: center;
-      gap: 16px;
+      justify-content: space-between;
       margin-bottom: 24px;
       background: #ffffff;
       padding: 16px 24px;
@@ -39,12 +38,20 @@
     }
     .brand-logo { height: 48px; object-fit: contain; }
     .header-title {
-      font-size: 28px;
+      font-size: 26px;
       font-weight: 900;
       color: #0f172a;
       margin: 0;
       text-transform: uppercase;
       letter-spacing: -0.5px;
+    }
+
+    .lang-select {
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: 1px solid #cbd5e1;
+      font-weight: 700;
+      cursor: pointer;
     }
 
     /* SECTION TITLES */
@@ -67,7 +74,7 @@
 
     .courts-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
       gap: 16px;
     }
 
@@ -103,17 +110,19 @@
     }
 
     .team-name-box {
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 800;
       width: 40%;
       white-space: pre-line;
       line-height: 1.2;
+      overflow-wrap: anywhere;
     }
 
     .score-num {
       font-size: 42px;
       font-weight: 900;
       color: #ef4444;
+      font-variant-numeric: tabular-nums;
     }
 
     /* PODIUM / KNOCKOUT STAGE */
@@ -155,38 +164,42 @@
     .third-place .podium-label { color: var(--bronze); }
 
     .podium-winner-name {
-      font-size: 20px;
+      font-size: 18px;
       font-weight: 900;
       color: #ffffff;
       white-space: pre-line;
       line-height: 1.3;
-    }
-
-    /* KNOCKOUT MATCH LIST */
-    .match-list {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .match-row {
-      background: var(--card-bg);
-      border-radius: 8px;
-      padding: 12px 20px;
+      min-height: 48px;
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      border-left: 4px solid #0284c7;
-      font-size: 14px;
+      justify-content: center;
     }
 
-    .match-title { font-weight: 800; color: #ef4444; width: 120px; }
-    .match-teams { flex: 1; font-weight: 700; }
-    .match-winner { font-weight: 800; color: #22c55e; text-align: right; }
+    /* CONTROLLER & STAGE MANAGEMENT STYLES */
+    .admin-panel {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 24px;
+    }
+
+    .btn-action {
+      padding: 10px 16px;
+      font-size: 14px;
+      font-weight: 700;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      color: white;
+    }
+    .btn-red { background: var(--primary-red); }
+    .btn-blue { background: #0284c7; }
+    .btn-dark { background: #334155; }
 
     @media (max-width: 768px) {
       .podium-grid { grid-template-columns: 1fr; }
-      .header-title { font-size: 20px; }
+      .header-title { font-size: 18px; }
       .brand-logo { height: 36px; }
     }
   </style>
@@ -195,15 +208,21 @@
 
   <!-- HEADER CONTAINER -->
   <div class="header-card">
-    <img src="/logo.png" alt="Logo" class="brand-logo">
-    <h1 class="header-title">Live Tournament Scoreboard</h1>
+    <div style="display: flex; align-items: center; gap: 16px;">
+      <img src="/logo.png" alt="Logo" class="brand-logo">
+      <h1 class="header-title">Live Tournament Scoreboard</h1>
+    </div>
+    <select class="lang-select" id="langSelect">
+      <option value="en">EN</option>
+      <option value="ms">BM</option>
+    </select>
   </div>
 
-  <!-- LIVE COURTS SECTION (Automatically hides when all courts available) -->
+  <!-- LIVE COURTS SECTION (Automatically hides when no matches are active) -->
   <div id="liveCourtsSection">
     <div class="section-title">Live Courts</div>
     <div class="courts-grid" id="courtsContainer">
-      <!-- Dynamic live courts injected here -->
+      <!-- Injected live courts -->
     </div>
   </div>
 
@@ -232,26 +251,21 @@
     </div>
   </div>
 
-  <!-- KNOCKOUT MATCH RESULTS -->
-  <div class="match-list" id="knockoutMatchList">
-    <!-- Knockout match rows injected here -->
-  </div>
-
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
 
     function formatName(name) {
-      if (!name) return '';
+      if (!name) return '-';
       if (name.includes('/')) return name.split('/').map(s => s.trim()).join('\n');
       if (name.includes('&')) return name.split('&').map(s => s.trim()).join('\n');
       return name;
     }
 
-    socket.on('initData', data => updateSpectatorView(data));
-    socket.on('stateUpdated', data => updateSpectatorView(data));
+    socket.on('initData', data => updateDashboard(data));
+    socket.on('stateUpdated', data => updateDashboard(data));
 
-    function updateSpectatorView(data) {
+    function updateDashboard(data) {
       if (!data) return;
 
       const activeCourts = data.activeCourts || {};
@@ -261,10 +275,11 @@
       let hasActiveMatches = false;
       courtsContainer.innerHTML = '';
 
-      // Render Court Cards
-      Object.keys(activeCourts).sort().forEach(courtId => {
+      const sortedCourtIds = Object.keys(activeCourts).sort();
+
+      sortedCourtIds.forEach(courtId => {
         const court = activeCourts[courtId];
-        const isLive = Boolean(court.teamA || court.teamB);
+        const isLive = Boolean(court.teamA && court.teamB);
 
         if (isLive) {
           hasActiveMatches = true;
@@ -279,7 +294,7 @@
             <div class="score-display">
               <div class="team-name-box">${formatName(court.teamA)}</div>
               <div class="score-num">${court.scoreA}</div>
-              <div style="font-weight: 800; color: #64748b;">:</div>
+              <div style="font-weight: 800; color: #ef4444; font-size: 24px;">:</div>
               <div class="score-num">${court.scoreB}</div>
               <div class="team-name-box">${formatName(court.teamB)}</div>
             </div>
@@ -287,26 +302,33 @@
         } else {
           courtCard.innerHTML = `
             <div class="court-header">Court ${courtId}</div>
-            <div class="court-available">Court Available</div>
+            <div class="score-display">
+              <div class="team-name-box" style="color: #64748b;">Empty</div>
+              <div class="score-num" style="color: #ef4444;">0</div>
+              <div style="font-weight: 800; color: #ef4444; font-size: 24px;">:</div>
+              <div class="score-num" style="color: #ef4444;">0</div>
+              <div class="team-name-box" style="color: #64748b;">Empty</div>
+            </div>
           `;
         }
 
         courtsContainer.appendChild(courtCard);
       });
 
-      // TOGGLE LIVE COURTS SECTION VISIBILITY
-      // If no live matches remain, hide Live Courts section so Podium moves to top
+      // SMART AUTO-HIDE LIVE COURTS SECTION
+      // When no matches are actively being played (or all matches are finished),
+      // hide the Live Courts section so the Podium moves straight to the top.
       if (hasActiveMatches) {
         liveCourtsSection.style.display = 'block';
       } else {
         liveCourtsSection.style.display = 'none';
       }
 
-      // Update Podium Winners
+      // PODIUM UPDATES
       if (data.podium) {
-        document.getElementById('championName').innerText = formatName(data.podium.champion) || '-';
-        document.getElementById('runnerUpName').innerText = formatName(data.podium.runnerUp) || '-';
-        document.getElementById('thirdPlaceName').innerText = formatName(data.podium.thirdPlace) || '-';
+        document.getElementById('championName').innerText = formatName(data.podium.champion);
+        document.getElementById('runnerUpName').innerText = formatName(data.podium.runnerUp);
+        document.getElementById('thirdPlaceName').innerText = formatName(data.podium.thirdPlace);
       }
     }
   </script>
