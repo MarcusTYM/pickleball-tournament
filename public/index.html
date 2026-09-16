@@ -204,16 +204,24 @@
     </div>
 
     <!-- STICKY NAVIGATION BAR WITH LARGER BUTTONS AND PADDLE ICON -->
-    <div class="sticky-nav-panel">
-      <button class="nav-btn" onclick="scrollToSection('sec-live-courts')">
-         <img src="paddle.png" alt="Paddle" style="height: 32px; width: auto; vertical-align: middle; transform: rotate(45deg); margin-right: 12px; display: inline-block;">
-        Live Courts
-      </button>
-      <button class="nav-btn" onclick="scrollToSection('sec-knockout')">🏆 Knockout Stage</button>
-      <button class="nav-btn" onclick="scrollToSection('sec-standings')">📊 Group Standings</button>
-      <button class="nav-btn" onclick="scrollToSection('sec-queue')">📋 Upcoming Queue</button>
-    </div>
-
+<div class="sticky-nav-panel">
+  <button class="nav-btn" onclick="scrollToSection('sec-live-courts')">
+    <img src="paddle.png" alt="" style="height: 32px; width: auto; transform: rotate(45deg); margin-right: 8px; vertical-align: middle;">
+    <span>Live Courts</span>
+  </button>
+  <button class="nav-btn" onclick="scrollToSection('sec-knockout')">
+    <span style="font-size: 32px; line-height: 1; margin-right: 8px; vertical-align: middle;">🏆</span>
+    <span>Knockout Stage</span>
+  </button>
+  <button class="nav-btn" onclick="scrollToSection('sec-standings')">
+    <span style="font-size: 32px; line-height: 1; margin-right: 8px; vertical-align: middle;">📊</span>
+    <span>Group Standings</span>
+  </button>
+  <button class="nav-btn" onclick="scrollToSection('sec-queue')">
+    <span style="font-size: 32px; line-height: 1; margin-right: 8px; vertical-align: middle;">📋</span>
+    <span>Upcoming Queue</span>
+  </button>
+</div>
     <h2 id="sec-live-courts" class="scroll-target">
       <img src="paddle.png" alt="Paddle" style="height: 32px; width: auto; vertical-align: middle; transform: rotate(45deg); margin-right: 12px; display: inline-block;">
 
