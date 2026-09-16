@@ -22,10 +22,10 @@
     
     /* Scroll target padding to prevent fixed nav bar overlapping headers */
     .scroll-target {
-      scroll-margin-top: 85px;
+      scroll-margin-top: 95px;
     }
 
-    h2 { color: var(--dark-slate); margin: 25px 0 12px 0; font-size: 18px; border-left: 4px solid var(--primary-red); padding-left: 10px; }
+    h2 { color: var(--dark-slate); margin: 25px 0 12px 0; font-size: 18px; border-left: 4px solid var(--primary-red); padding-left: 10px; display: flex; align-items: center; }
     
     .header-bar { 
       display: flex; 
@@ -40,45 +40,48 @@
     .header-brand { display: flex; align-items: center; gap: 15px; }
     .header-logo { height: 65px; object-fit: contain; }
 
-    /* Matching Light Sticky Top Navigation Panel */
+    /* Sticky Top Navigation Panel with Larger Buttons */
     .sticky-nav-panel {
       position: sticky;
       top: 10px;
       z-index: 1000;
       background: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(8px);
-      padding: 8px 16px;
+      padding: 12px 20px;
       border-radius: 8px;
       box-shadow: 0 4px 14px rgba(0,0,0,0.08);
       margin-bottom: 20px;
       display: flex;
       justify-content: center;
       align-items: center;
-      gap: 12px;
+      gap: 16px;
       flex-wrap: wrap;
       border: 1px solid #e2e8f0;
       border-top: 3px solid var(--primary-red);
     }
 
+    /* Larger, Prominent Navigation Buttons */
     .nav-btn {
       background: #f8fafc;
-      color: #334155;
-      border: 1px solid #cbd5e1;
-      padding: 8px 16px;
-      border-radius: 6px;
+      color: #1e293b;
+      border: 1.5px solid #cbd5e1;
+      padding: 10px 22px;
+      border-radius: 8px;
       cursor: pointer;
       font-weight: 700;
-      font-size: 13px;
+      font-size: 15px;
       transition: all 0.2s ease-in-out;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      display: inline-flex;
+      align-items: center;
     }
 
     .nav-btn:hover, .nav-btn:focus {
       background: var(--primary-red);
       border-color: var(--primary-red);
       color: white;
-      transform: translateY(-1px);
-      box-shadow: 0 3px 8px rgba(225, 37, 27, 0.25);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 10px rgba(225, 37, 27, 0.3);
     }
 
     /* Floating Back To Top Button */
@@ -90,8 +93,8 @@
       background: var(--primary-red);
       color: white;
       border: none;
-      width: 46px;
-      height: 46px;
+      width: 48px;
+      height: 48px;
       border-radius: 50%;
       box-shadow: 0 4px 12px rgba(225, 37, 27, 0.35);
       cursor: pointer;
@@ -169,9 +172,15 @@
 </head>
 <body id="top">
 
-<div id="setupScreen" class="card setup-box" style="display: none;">
-    <img src="/logo.png" alt="Sanmina Logo" style="height: 140px; max-width: 100%; object-fit: contain;">
-    <h2>🎾 Tournament Setup</h2>
+  <!-- SETUP SCREEN -->
+  <div id="setupScreen" class="card setup-box" style="display: none;">
+    <!-- Larger Company Logo -->
+    <img src="/logo.png" alt="Sanmina Logo" style="height: 140px; max-width: 100%; object-fit: contain; margin-bottom: 20px;">
+    
+    <h2>
+      <img src="/paddle.png" alt="Paddle" style="height: 28px; vertical-align: middle; margin-right: 8px;">
+      Tournament Setup
+    </h2>
     <p style="color: #64748b; font-size: 14px;">Configure event parameters:</p>
     <div style="margin-bottom: 15px; text-align: left;">
       <label><strong>Total Number of Pairs:</strong></label><br>
@@ -184,6 +193,7 @@
     <button class="btn-green" style="width: 100%;" onclick="startTournament()">Start Tournament</button>
   </div>
 
+  <!-- MAIN DASHBOARD SCREEN -->
   <div id="dashboardScreen" style="display: none;">
     <div class="header-bar">
       <div class="header-brand">
@@ -193,15 +203,21 @@
       <button class="btn-red" onclick="resetTournament()">🔄 Reset Tournament</button>
     </div>
 
-    <!-- CLEAN MATCHING STICKY TOP NAVIGATION PANEL -->
+    <!-- STICKY NAVIGATION BAR WITH LARGER BUTTONS AND PADDLE ICON -->
     <div class="sticky-nav-panel">
-      <button class="nav-btn" onclick="scrollToSection('sec-live-courts')">🎾 Live Courts</button>
+      <button class="nav-btn" onclick="scrollToSection('sec-live-courts')">
+        <img src="/paddle.png" alt="" style="height: 20px; margin-right: 8px;">
+        Live Courts
+      </button>
       <button class="nav-btn" onclick="scrollToSection('sec-knockout')">🏆 Knockout Stage</button>
       <button class="nav-btn" onclick="scrollToSection('sec-standings')">📊 Group Standings</button>
       <button class="nav-btn" onclick="scrollToSection('sec-queue')">📋 Upcoming Queue</button>
     </div>
 
-    <h2 id="sec-live-courts" class="scroll-target">Live Courts</h2>
+    <h2 id="sec-live-courts" class="scroll-target">
+      <img src="/paddle.png" alt="" style="height: 24px; margin-right: 8px;">
+      Live Courts
+    </h2>
     <div class="grid-3" id="courtsContainer"></div>
 
     <h2 id="sec-knockout" class="scroll-target">Knockout Stage (Semifinals & Finals)</h2>
@@ -269,7 +285,7 @@
       document.getElementById('setupScreen').style.display = 'none';
       document.getElementById('dashboardScreen').style.display = 'block';
 
-      // Render Enhanced Court Cards for Courts 4, 5, and 6
+      // Render Court Cards (Courts 4, 5, 6)
       let courtsHtml = '';
       [4, 5, 6].forEach(i => {
         const c = activeCourts[i] || { teamA: '', teamB: '', scoreA: 0, scoreB: 0, matchId: null };
