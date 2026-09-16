@@ -13,8 +13,18 @@
       --border-color: #cbd5e1;
     }
 
+    html {
+      scroll-behavior: smooth;
+    }
+
     body { font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 20px; background: #f1f5f9; color: #334155; }
     h1 { color: var(--dark-slate); margin: 0; font-size: 22px; }
+    
+    /* Scroll target padding to prevent fixed nav bar overlapping headers */
+    .scroll-target {
+      scroll-margin-top: 75px;
+    }
+
     h2 { color: var(--dark-slate); margin: 25px 0 12px 0; font-size: 18px; border-left: 4px solid var(--primary-red); padding-left: 10px; }
     
     .header-bar { 
@@ -29,6 +39,70 @@
     }
     .header-brand { display: flex; align-items: center; gap: 15px; }
     .header-logo { height: 65px; object-fit: contain; }
+
+    /* Sticky Top Navigation Panel */
+    .sticky-nav-panel {
+      position: sticky;
+      top: 10px;
+      z-index: 1000;
+      background: rgba(30, 41, 59, 0.95);
+      backdrop-filter: blur(8px);
+      padding: 10px 16px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      border: 1px solid var(--dark-slate);
+    }
+
+    .nav-btn {
+      background: #334155;
+      color: white;
+      border: 1px solid #475569;
+      padding: 8px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 12px;
+      transition: all 0.2s ease-in-out;
+    }
+
+    .nav-btn:hover {
+      background: var(--primary-red);
+      border-color: var(--primary-red);
+      color: white;
+    }
+
+    /* Floating Back To Top Button */
+    .back-to-top-btn {
+      position: fixed;
+      bottom: 25px;
+      right: 25px;
+      z-index: 9999;
+      background: var(--primary-red);
+      color: white;
+      border: none;
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: bold;
+      transition: all 0.2s ease-in-out;
+    }
+
+    .back-to-top-btn:hover {
+      background: var(--hover-red);
+      transform: translateY(-3px);
+    }
 
     .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; }
     
@@ -89,7 +163,8 @@
     .setup-box { max-width: 400px; margin: 40px auto; text-align: center; }
   </style>
 </head>
-<body>
+<body id="top">
+
 <div id="setupScreen" class="card setup-box" style="display: none;">
   <img src="/logo.png" alt="Sanmina Logo" style="height: 85px; margin-bottom: 15px;">
   <h2>🎾 Tournament Setup</h2>
@@ -114,10 +189,18 @@
       <button class="btn-red" onclick="resetTournament()">🔄 Reset Tournament</button>
     </div>
 
-    <h2>Live Courts</h2>
+    <!-- FROZEN / STICKY TOP NAVIGATION PANEL -->
+    <div class="sticky-nav-panel">
+      <button class="nav-btn" onclick="scrollToSection('sec-live-courts')">🎾 Live Courts</button>
+      <button class="nav-btn" onclick="scrollToSection('sec-knockout')">🏆 Knockout Stage</button>
+      <button class="nav-btn" onclick="scrollToSection('sec-standings')">📊 Group Standings</button>
+      <button class="nav-btn" onclick="scrollToSection('sec-queue')">📋 Upcoming Queue</button>
+    </div>
+
+    <h2 id="sec-live-courts" class="scroll-target">Live Courts</h2>
     <div class="grid-3" id="courtsContainer"></div>
 
-    <h2>Knockout Stage (Semifinals & Finals)</h2>
+    <h2 id="sec-knockout" class="scroll-target">Knockout Stage (Semifinals & Finals)</h2>
     <div class="card" style="margin-bottom: 25px;">
       <div id="knockoutActionContainer">
         <button class="btn-green" onclick="generateKnockout()">🏆 Generate Knockout Bracket</button>
@@ -125,12 +208,15 @@
       <div id="knockoutMatchesContainer" style="margin-top: 15px;"></div>
     </div>
 
-    <h2>Group Standings & Edit Teams</h2>
+    <h2 id="sec-standings" class="scroll-target">Group Standings & Edit Teams</h2>
     <div class="tables-container" id="standingsContainer"></div>
 
-    <h2>Upcoming Round-Robin Queue</h2>
+    <h2 id="sec-queue" class="scroll-target">Upcoming Round-Robin Queue</h2>
     <div class="card" id="scheduleContainer"></div>
   </div>
+
+  <!-- FLOATING BACK-TO-TOP BUTTON -->
+  <button class="back-to-top-btn" onclick="scrollToTop()" title="Back to Top">▲</button>
 
 <footer style="text-align: center; padding: 24px 10px; font-size: 13px; color: #64748b; margin-top: 50px; border-top: 1px solid #334155;">
   <p>© 2026 Sanmina. All Rights Reserved.</p>
@@ -139,6 +225,17 @@
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
+
+    function scrollToSection(id) {
+      const el = document.getElementById(id);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+
+    function scrollToTop() {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
 
     socket.on('initData', renderAll);
     socket.on('stateUpdated', renderAll);
