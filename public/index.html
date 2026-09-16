@@ -3,332 +3,303 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pickleball Tournament Host Controller</title>
+  <title>Host Dashboard - Pickleball Tournament</title>
   <style>
     :root {
       --primary-red: #e1251b;
-      --dark-bg: #0b1329;
-      --card-bg: #152238;
-      --border-color: #1e2d4a;
-      --gold: #fbbf24;
-      --silver: #94a3b8;
-      --bronze: #d97706;
+      --hover-red: #b91c1c;
+      --dark-slate: #1e293b;
+      --light-bg: #f8fafc;
+      --border-color: #cbd5e1;
     }
 
-    * { box-sizing: border-box; }
-
-    body {
-      font-family: system-ui, -apple-system, sans-serif;
-      margin: 0;
-      padding: 20px;
-      background: var(--dark-bg);
-      color: #ffffff;
+    body { font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 20px; background: #f1f5f9; color: #334155; }
+    h1 { color: var(--dark-slate); margin: 0; font-size: 22px; }
+    h2 { color: var(--dark-slate); margin: 25px 0 12px 0; font-size: 18px; border-left: 4px solid var(--primary-red); padding-left: 10px; }
+    
+    .header-bar { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      margin-bottom: 20px; 
+      background: white; 
+      padding: 12px 20px; 
+      border-radius: 8px; 
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05); 
     }
+    .header-brand { display: flex; align-items: center; gap: 15px; }
+    .header-logo { height: 65px; object-fit: contain; }
 
-    /* HEADER CARD */
-    .header-card {
+    .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; }
+    
+    /* Styled Court Cards */
+    .court-card { 
+      background: white; 
+      padding: 16px; 
+      border-radius: 8px; 
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05); 
+      border-top: 4px solid var(--primary-red);
       display: flex;
-      align-items: center;
+      flex-direction: column;
       justify-content: space-between;
-      margin-bottom: 24px;
-      background: #ffffff;
-      padding: 16px 24px;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     }
-    .brand-logo { height: 48px; object-fit: contain; }
-    .header-title {
-      font-size: 26px;
-      font-weight: 900;
-      color: #0f172a;
-      margin: 0;
-      text-transform: uppercase;
-      letter-spacing: -0.5px;
-    }
+    .court-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .court-title { font-weight: bold; color: var(--dark-slate); font-size: 16px; }
+    .status-badge { font-size: 11px; padding: 3px 8px; border-radius: 12px; font-weight: bold; text-transform: uppercase; }
+    .status-live { background: #dcfce7; color: #15803d; }
+    .status-free { background: #f1f5f9; color: #64748b; }
 
-    .lang-select {
-      padding: 6px 12px;
-      border-radius: 6px;
-      border: 1px solid #cbd5e1;
-      font-weight: 700;
-      cursor: pointer;
-    }
+    .score-display { font-size: 40px; font-weight: 800; color: var(--primary-red); margin: 10px 0; text-align: center; font-variant-numeric: tabular-nums; }
+    
+    .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .tables-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 15px; }
+    
+    /* Styled Group Tables */
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; background: white; border-radius: 6px; overflow: hidden; }
+    th, td { border-bottom: 1px solid #e2e8f0; padding: 8px 10px; text-align: left; font-size: 13px; vertical-align: middle; }
+    th { background: var(--dark-slate); color: white; font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; }
+    tr:nth-child(even) { background: #f8fafc; }
 
-    /* SECTION TITLES */
-    .section-title {
-      font-size: 16px;
-      font-weight: 800;
-      color: #ef4444;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      border-left: 4px solid #ef4444;
-      padding-left: 10px;
-      margin-bottom: 16px;
-    }
+    #scheduleContainer, #knockoutMatchesContainer { padding: 0; overflow: hidden; }
 
-    /* LIVE COURTS SECTION */
-    #liveCourtsSection {
-      margin-bottom: 30px;
-      transition: all 0.3s ease;
-    }
-
-    .courts-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-      gap: 16px;
-    }
-
-    .court-card {
-      background: var(--card-bg);
-      border: 1px solid #ef4444;
-      border-radius: 12px;
-      padding: 20px;
-      text-align: center;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-    }
-
-    .court-header {
-      font-size: 14px;
-      font-weight: 800;
-      color: #94a3b8;
-      text-transform: uppercase;
-      margin-bottom: 12px;
-    }
-
-    .court-available {
-      font-style: italic;
-      color: #64748b;
-      font-size: 16px;
-      padding: 20px 0;
-    }
-
-    .score-display {
+    /* Match Queue Styling */
+    .match-item {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin: 10px 0;
-    }
-
-    .team-name-box {
-      font-size: 15px;
-      font-weight: 800;
-      width: 40%;
-      white-space: pre-line;
-      line-height: 1.2;
-      overflow-wrap: anywhere;
-    }
-
-    .score-num {
-      font-size: 42px;
-      font-weight: 900;
-      color: #ef4444;
-      font-variant-numeric: tabular-nums;
-    }
-
-    /* PODIUM / KNOCKOUT STAGE */
-    .podium-section {
-      margin-bottom: 30px;
-    }
-
-    .podium-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 16px;
-    }
-
-    .podium-card {
-      background: var(--card-bg);
-      border-radius: 12px;
-      padding: 24px 16px;
-      text-align: center;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    }
-
-    .podium-card.champion { border: 2px solid var(--gold); }
-    .podium-card.runner-up { border: 2px solid var(--silver); }
-    .podium-card.third-place { border: 2px solid var(--bronze); }
-
-    .podium-badge {
-      font-size: 32px;
-      margin-bottom: 8px;
-    }
-
-    .podium-label {
-      font-size: 12px;
-      font-weight: 900;
-      text-transform: uppercase;
-      margin-bottom: 8px;
-    }
-    .champion .podium-label { color: var(--gold); }
-    .runner-up .podium-label { color: var(--silver); }
-    .third-place .podium-label { color: var(--bronze); }
-
-    .podium-winner-name {
-      font-size: 18px;
-      font-weight: 900;
-      color: #ffffff;
-      white-space: pre-line;
-      line-height: 1.3;
-      min-height: 48px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    /* CONTROLLER & STAGE MANAGEMENT STYLES */
-    .admin-panel {
-      background: var(--card-bg);
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 20px;
-      margin-top: 24px;
-    }
-
-    .btn-action {
       padding: 10px 16px;
-      font-size: 14px;
-      font-weight: 700;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      color: white;
+      border-bottom: 1px solid #f1f5f9;
+      transition: background-color 0.15s ease-in-out;
     }
-    .btn-red { background: var(--primary-red); }
-    .btn-blue { background: #0284c7; }
-    .btn-dark { background: #334155; }
+    .match-item:nth-child(even) { background-color: #f8fafc; }
+    .match-item:nth-child(odd) { background-color: #ffffff; }
+    .match-item:hover { background-color: #fef2f2 !important; }
+    .match-item:last-child { border-bottom: none; }
 
-    @media (max-width: 768px) {
-      .podium-grid { grid-template-columns: 1fr; }
-      .header-title { font-size: 18px; }
-      .brand-logo { height: 36px; }
-    }
+    button { background: var(--primary-red); color: white; border: none; padding: 7px 14px; border-radius: 5px; cursor: pointer; font-weight: 600; font-size: 13px; }
+    button:hover { background: var(--hover-red); }
+    select, input { padding: 6px 10px; border: 1px solid var(--border-color); border-radius: 5px; font-size: 13px; }
+    .team-edit-textarea { width: 110px; height: 38px; font-size: 12px; font-family: inherit; resize: vertical; border: 1px solid var(--border-color); border-radius: 4px; padding: 4px; }
+    .multiline-name { white-space: pre-line; display: inline-block; font-weight: 600; }
+    
+    .btn-green { background: #16a34a; font-size: 14px; padding: 8px 16px; }
+    .btn-green:hover { background: #15803d; }
+    .btn-red { background: #991b1b; font-weight: bold; padding: 8px 14px; font-size: 12px; }
+    .btn-red:hover { background: #7f1d1d; }
+    .setup-box { max-width: 400px; margin: 40px auto; text-align: center; }
   </style>
 </head>
 <body>
-
-  <!-- HEADER CONTAINER -->
-  <div class="header-card">
-    <div style="display: flex; align-items: center; gap: 16px;">
-      <img src="/logo.png" alt="Logo" class="brand-logo">
-      <h1 class="header-title">Live Tournament Scoreboard</h1>
+<div id="setupScreen" class="card setup-box" style="display: none;">
+  <img src="/logo.png" alt="Sanmina Logo" style="height: 85px; margin-bottom: 15px;">
+  <h2>🎾 Tournament Setup</h2>
+    <p style="color: #64748b; font-size: 14px;">Configure event parameters:</p>
+    <div style="margin-bottom: 15px; text-align: left;">
+      <label><strong>Total Number of Pairs:</strong></label><br>
+      <input type="number" id="numTeams" value="20" min="4" max="60" style="width: 93%; margin-top: 5px;">
     </div>
-    <select class="lang-select" id="langSelect">
-      <option value="en">EN</option>
-      <option value="ms">BM</option>
-    </select>
+    <div style="margin-bottom: 20px; text-align: left;">
+      <label><strong>Number of Groups:</strong></label><br>
+      <input type="number" id="numGroups" value="4" min="2" max="6" style="width: 93%; margin-top: 5px;">
+    </div>
+    <button class="btn-green" style="width: 100%;" onclick="startTournament()">Start Tournament</button>
   </div>
 
-  <!-- LIVE COURTS SECTION (Automatically hides when no matches are active) -->
-  <div id="liveCourtsSection">
-    <div class="section-title">Live Courts</div>
-    <div class="courts-grid" id="courtsContainer">
-      <!-- Injected live courts -->
+  <div id="dashboardScreen" style="display: none;">
+    <div class="header-bar">
+      <div class="header-brand">
+        <img src="/logo.png" alt="Sanmina Logo" class="header-logo" style="height: 65px;">
+        <h1>Pickleball Tournament Host Dashboard</h1>
+      </div>
+      <button class="btn-red" onclick="resetTournament()">🔄 Reset Tournament</button>
     </div>
+
+    <h2>Live Courts</h2>
+    <div class="grid-3" id="courtsContainer"></div>
+
+    <h2>Knockout Stage (Semifinals & Finals)</h2>
+    <div class="card" style="margin-bottom: 25px;">
+      <div id="knockoutActionContainer">
+        <button class="btn-green" onclick="generateKnockout()">🏆 Generate Knockout Bracket</button>
+      </div>
+      <div id="knockoutMatchesContainer" style="margin-top: 15px;"></div>
+    </div>
+
+    <h2>Group Standings & Edit Teams</h2>
+    <div class="tables-container" id="standingsContainer"></div>
+
+    <h2>Upcoming Round-Robin Queue</h2>
+    <div class="card" id="scheduleContainer"></div>
   </div>
 
-  <!-- PODIUM & KNOCKOUT STAGE SECTION -->
-  <div class="podium-section">
-    <div class="section-title">Knockout Stage</div>
-    
-    <div class="podium-grid" id="podiumGrid">
-      <div class="podium-card champion">
-        <div class="podium-badge">🏆</div>
-        <div class="podium-label">Champion (1st Place)</div>
-        <div class="podium-winner-name" id="championName">-</div>
-      </div>
-
-      <div class="podium-card runner-up">
-        <div class="podium-badge">🥈</div>
-        <div class="podium-label">1st Runner-Up (2nd Place)</div>
-        <div class="podium-winner-name" id="runnerUpName">-</div>
-      </div>
-
-      <div class="podium-card third-place">
-        <div class="podium-badge">🥉</div>
-        <div class="podium-label">2nd Runner-Up (3rd Place)</div>
-        <div class="podium-winner-name" id="thirdPlaceName">-</div>
-      </div>
-    </div>
-  </div>
+<footer style="text-align: center; padding: 24px 10px; font-size: 13px; color: #64748b; margin-top: 50px; border-top: 1px solid #334155;">
+  <p>© 2026 Sanmina. All Rights Reserved.</p>
+</footer>
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
 
-    function formatName(name) {
-      if (!name) return '-';
-      if (name.includes('/')) return name.split('/').map(s => s.trim()).join('\n');
-      if (name.includes('&')) return name.split('&').map(s => s.trim()).join('\n');
-      return name;
+    socket.on('initData', renderAll);
+    socket.on('stateUpdated', renderAll);
+    socket.on('scoreUpdated', ({ courtId, scoreA, scoreB }) => {
+      const el = document.getElementById(`c${courtId}-score`);
+      if (el) el.innerText = `${scoreA} - ${scoreB}`;
+    });
+
+    function startTournament() {
+      const numTeams = parseInt(document.getElementById('numTeams').value);
+      const numGroups = parseInt(document.getElementById('numGroups').value);
+      if (confirm(`Create tournament with ${numTeams} Pairs divided across ${numGroups} Groups?`)) {
+        socket.emit('setupTournament', { numTeams, numGroups });
+      }
     }
 
-    socket.on('initData', data => updateDashboard(data));
-    socket.on('stateUpdated', data => updateDashboard(data));
-
-    function updateDashboard(data) {
+    function renderAll(data) {
       if (!data) return;
+      const { tournament, activeCourts } = data;
 
-      const activeCourts = data.activeCourts || {};
-      const courtsContainer = document.getElementById('courtsContainer');
-      const liveCourtsSection = document.getElementById('liveCourtsSection');
-
-      let hasActiveMatches = false;
-      courtsContainer.innerHTML = '';
-
-      const sortedCourtIds = Object.keys(activeCourts).sort();
-
-      sortedCourtIds.forEach(courtId => {
-        const court = activeCourts[courtId];
-        const isLive = Boolean(court.teamA && court.teamB);
-
-        if (isLive) {
-          hasActiveMatches = true;
-        }
-
-        const courtCard = document.createElement('div');
-        courtCard.className = 'court-card';
-
-        if (isLive) {
-          courtCard.innerHTML = `
-            <div class="court-header">Court ${courtId}</div>
-            <div class="score-display">
-              <div class="team-name-box">${formatName(court.teamA)}</div>
-              <div class="score-num">${court.scoreA}</div>
-              <div style="font-weight: 800; color: #ef4444; font-size: 24px;">:</div>
-              <div class="score-num">${court.scoreB}</div>
-              <div class="team-name-box">${formatName(court.teamB)}</div>
-            </div>
-          `;
-        } else {
-          courtCard.innerHTML = `
-            <div class="court-header">Court ${courtId}</div>
-            <div class="score-display">
-              <div class="team-name-box" style="color: #64748b;">Empty</div>
-              <div class="score-num" style="color: #ef4444;">0</div>
-              <div style="font-weight: 800; color: #ef4444; font-size: 24px;">:</div>
-              <div class="score-num" style="color: #ef4444;">0</div>
-              <div class="team-name-box" style="color: #64748b;">Empty</div>
-            </div>
-          `;
-        }
-
-        courtsContainer.appendChild(courtCard);
-      });
-
-      // SMART AUTO-HIDE LIVE COURTS SECTION
-      // When no matches are actively being played (or all matches are finished),
-      // hide the Live Courts section so the Podium moves straight to the top.
-      if (hasActiveMatches) {
-        liveCourtsSection.style.display = 'block';
-      } else {
-        liveCourtsSection.style.display = 'none';
+      if (!tournament || !tournament.initialized) {
+        document.getElementById('setupScreen').style.display = 'block';
+        document.getElementById('dashboardScreen').style.display = 'none';
+        return;
       }
 
-      // PODIUM UPDATES
-      if (data.podium) {
-        document.getElementById('championName').innerText = formatName(data.podium.champion);
-        document.getElementById('runnerUpName').innerText = formatName(data.podium.runnerUp);
-        document.getElementById('thirdPlaceName').innerText = formatName(data.podium.thirdPlace);
+      document.getElementById('setupScreen').style.display = 'none';
+      document.getElementById('dashboardScreen').style.display = 'block';
+
+      // Render Enhanced Court Cards for Courts 4, 5, and 6
+      let courtsHtml = '';
+      [4, 5, 6].forEach(i => {
+        const c = activeCourts[i] || { teamA: '', teamB: '', scoreA: 0, scoreB: 0, matchId: null };
+        const isLive = !!c.matchId;
+        courtsHtml += `
+          <div class="court-card">
+            <div class="court-header">
+              <span class="court-title">Court ${i}</span>
+              <span class="status-badge ${isLive ? 'status-live' : 'status-free'}">
+                ${isLive ? 'In Progress' : 'Available'}
+              </span>
+            </div>
+            <div style="text-align: center; margin: 8px 0;">
+              <span class="multiline-name">${c.teamA}</span> 
+              <span style="color: #94a3b8; font-size: 12px; margin: 0 4px;">VS</span> 
+              <span class="multiline-name">${c.teamB}</span>
+            </div>
+            <div class="score-display" id="c${i}-score">${c.scoreA} - ${c.scoreB}</div>
+            <div style="text-align: right; margin-top: 10px;">
+              ${isLive ? `<button onclick="finishMatch(${i})" style="background:#dc2626; width: 100%;">Finish Match</button>` : '<div style="text-align: center; color: #94a3b8; font-size: 13px;">Ready for assignment</div>'}
+            </div>
+          </div>`;
+      });
+      document.getElementById('courtsContainer').innerHTML = courtsHtml;
+
+      // Render Knockout Bracket
+      if (tournament.knockout && tournament.knockout.generated) {
+        document.getElementById('knockoutActionContainer').innerHTML = '<strong style="color: #16a34a;">Status: Knockout Stage Active!</strong>';
+        let koHtml = '';
+        tournament.knockout.matches.forEach(m => {
+          koHtml += `
+            <div class="match-item">
+              <span>
+                <strong style="color:var(--primary-red);">${m.label}:</strong> 
+                <span class="multiline-name">${m.teamA}</span> vs <span class="multiline-name">${m.teamB}</span>
+                ${m.winner ? `<strong style="color:#16a34a; margin-left:10px;">(Winner: ${m.winner})</strong>` : ''}
+              </span>
+              <div>
+                ${(m.status === 'UPCOMING' || m.status === 'READY') ? `
+                  <select id="assign-court-${m.id}">
+                    <option value="4">Court 4</option>
+                    <option value="5">Court 5</option>
+                    <option value="6">Court 6</option>
+                  </select>
+                  <button onclick="assignMatch(${m.id})">Send to Court</button>
+                ` : `<em style="color: #94a3b8; font-size: 13px;">Status: ${m.status}</em>`}
+              </div>
+            </div>`;
+        });
+        document.getElementById('knockoutMatchesContainer').innerHTML = koHtml;
+      } else {
+        document.getElementById('knockoutMatchesContainer').innerHTML = '<p style="padding: 15px; color: #64748b; margin: 0;">Click the button above once round-robin standings are finalized to generate Semifinals!</p>';
+      }
+
+      // Render Group Standings Tables
+      let standingsHtml = '';
+      Object.keys(tournament.groups).forEach(g => {
+        standingsHtml += `
+          <div class="card">
+            <h3 style="margin: 0 0 10px 0; color: var(--dark-slate); font-size: 16px;">Group ${g}</h3>
+            <table>
+              <tr><th>Pair Name</th><th>W</th><th>L</th><th>Diff</th><th>Action</th></tr>
+              ${tournament.groups[g].map(p => `
+                <tr>
+                  <td>
+                    <textarea id="input-${p.id}" class="team-edit-textarea">${p.name}</textarea>
+                  </td>
+                  <td style="font-weight: bold; color: #16a34a;">${p.wins}</td>
+                  <td style="color: #dc2626;">${p.losses}</td>
+                  <td style="font-weight: 500;">${p.diff > 0 ? '+' + p.diff : p.diff}</td>
+                  <td>
+                    <button onclick="saveTeamName('${g}', '${p.id}')" style="padding:4px 8px; font-size:11px;">Save</button>
+                  </td>
+                </tr>`).join('')}
+            </table>
+          </div>`;
+      });
+      document.getElementById('standingsContainer').innerHTML = standingsHtml;
+
+      // Render Upcoming Queue
+      const upcoming = tournament.schedule.filter(m => m.status === 'UPCOMING');
+      let scheduleHtml = upcoming.length === 0 ? '<p style="padding: 15px; color: #64748b; margin:0;">No upcoming group matches left!</p>' : '';
+      upcoming.forEach((m, index) => {
+        scheduleHtml += `
+          <div class="match-item">
+            <span>
+              <strong style="color: var(--dark-slate);">#${index + 1} [Group ${m.group}]</strong> 
+              <span class="multiline-name" style="margin-left: 8px;">${m.teamA}</span> <span style="color:#94a3b8;">vs</span> <span class="multiline-name">${m.teamB}</span>
+            </span>
+            <div>
+              <select id="assign-court-${m.id}">
+                <option value="4">Court 4</option>
+                <option value="5">Court 5</option>
+                <option value="6">Court 6</option>
+              </select>
+              <button onclick="assignMatch(${m.id})">Send to Court</button>
+            </div>
+          </div>`;
+      });
+      document.getElementById('scheduleContainer').innerHTML = scheduleHtml;
+    }
+
+    function saveTeamName(group, teamId) {
+      const newName = document.getElementById(`input-${teamId}`).value.trim();
+      if (newName && confirm(`Update pair name to:\n\n"${newName}"?`)) {
+        socket.emit('updateTeamName', { group, teamId, newName });
+      }
+    }
+
+    function assignMatch(matchId) {
+      const courtId = parseInt(document.getElementById(`assign-court-${matchId}`).value);
+      if (confirm(`Assign this match to Court ${courtId}?`)) {
+        socket.emit('assignMatch', { matchId, courtId });
+      }
+    }
+
+    function finishMatch(courtId) {
+      if (confirm(`Are you sure you want to FINISH and finalize scores for Court ${courtId}?`)) {
+        socket.emit('finishMatch', { courtId });
+      }
+    }
+
+    function generateKnockout() {
+      if (confirm("Generate Knockout Stage based on current group standings?")) {
+        socket.emit('generateKnockout');
+      }
+    }
+
+    function resetTournament() {
+      if (confirm("⚠️ CRITICAL WARNING: Are you sure you want to RESET EVERYTHING?\n\nThis will return to the setup screen!")) {
+        socket.emit('resetTournament');
       }
     }
   </script>
