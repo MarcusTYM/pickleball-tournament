@@ -42,7 +42,41 @@
     .brand-logo { height: 50px; object-fit: contain; }
     h1 { color: #ffffff; font-size: clamp(20px, 4vw, 28px); margin: 0; font-weight: 800; letter-spacing: -0.5px; text-align: center; }
     
-    h2 {
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 24px 0 12px 0;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .section-header h2 {
+      color: #f87171;
+      font-size: 18px;
+      margin: 0;
+      border-left: 4px solid var(--primary-red);
+      padding-left: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .toggle-arrow {
+      color: #f87171;
+      font-size: 18px;
+      font-weight: bold;
+      transition: transform 0.3s ease;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 4px 10px;
+    }
+
+    .toggle-arrow.collapsed {
+      transform: rotate(-180deg);
+    }
+
+    h2.static-header {
       color: #f87171;
       font-size: 18px;
       margin: 24px 0 12px 0;
@@ -52,7 +86,7 @@
       letter-spacing: 0.5px;
     }
 
-    .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; transition: all 0.3s ease; }
     
     .court-card {
       background: var(--card-bg);
@@ -185,16 +219,20 @@
     <h1>Live Tournament Scoreboard</h1>
   </div>
 
-  <h2>Live Courts</h2>
+  <!-- COLLAPSIBLE LIVE COURTS HEADER -->
+  <div class="section-header" onclick="toggleLiveCourts()">
+    <h2>Live Courts</h2>
+    <span class="toggle-arrow" id="courtsToggleArrow">▲</span>
+  </div>
   <div class="grid-3" id="courtsContainer"></div>
 
-  <h2>Knockout Stage</h2>
+  <h2 class="static-header">Knockout Stage</h2>
   <div id="podiumContainer"></div>
   <div class="card" style="padding: 0; overflow: hidden;">
     <div id="knockoutMatchesContainer"></div>
   </div>
 
-  <h2>Group Standings</h2>
+  <h2 class="static-header">Group Standings</h2>
   <div class="tables-container" id="standingsContainer"></div>
 
   <footer style="text-align: center; padding: 24px 10px; font-size: 12px; color: #64748b; margin-top: 40px; border-top: 1px solid #334155;">
@@ -205,6 +243,18 @@
   <script>
     const socket = io();
     let currentCourts = {};
+
+    function toggleLiveCourts() {
+      const container = document.getElementById('courtsContainer');
+      const arrow = document.getElementById('courtsToggleArrow');
+      if (container.style.display === 'none') {
+        container.style.display = 'grid';
+        arrow.classList.remove('collapsed');
+      } else {
+        container.style.display = 'none';
+        arrow.classList.add('collapsed');
+      }
+    }
 
     function formatName(name) {
       if (!name) return '';
