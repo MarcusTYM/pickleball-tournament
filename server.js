@@ -29,7 +29,8 @@ let tournament = {
   initialized: false, 
   groups: {}, 
   schedule: [], 
-  knockout: { generated: false, matches: [] } 
+  knockout: { generated: false, matches: [] },
+  auditLog: []
 };
 
 let activeCourts = {
@@ -37,6 +38,15 @@ let activeCourts = {
   5: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0, startedAt: null, isPaused: false, elapsedTime: 0 },
   6: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0, startedAt: null, isPaused: false, elapsedTime: 0 }
 };
+
+function addLog(action, details) {
+  if (!tournament.auditLog) tournament.auditLog = [];
+  tournament.auditLog.unshift({
+    timestamp: new Date().toLocaleTimeString('en-US', { hour12: false }),
+    action,
+    details
+  });
+}
 
 async function saveData() {
   try {
@@ -54,7 +64,10 @@ async function loadInitialData() {
       const data = await redis.get('tournament_state');
       if (data) {
         const parsed = typeof data === 'string' ? JSON.parse(data) : data;
-        if (parsed.tournament) tournament = parsed.tournament;
+        if (parsed.tournament) {
+          tournament = parsed.tournament;
+          if (!tournament.auditLog) tournament.auditLog = [];
+        }
         if (parsed.activeCourts) activeCourts = parsed.activeCourts;
         console.log("Successfully loaded state from Redis");
       }
@@ -129,7 +142,8 @@ function createTournament(numTeams, numGroups) {
     numGroups,
     groups,
     schedule,
-    knockout: { generated: false, matches: [] }
+    knockout: { generated: false, matches: [] },
+    auditLog: []
   };
 }
 
@@ -181,13 +195,11 @@ function generateKnockoutBracket() {
   const groupWinners = [];
   const groupRunnersUp = [];
 
-  // Collect #1 and #2 teams from all active groups
   Object.keys(tournament.groups).forEach(g => {
     if (tournament.groups[g][0]) groupWinners.push({ ...tournament.groups[g][0], group: g });
     if (tournament.groups[g][1]) groupRunnersUp.push({ ...tournament.groups[g][1], group: g });
   });
 
-  // Sorting helper: Wins -> Point Difference -> Points For
   const compareTeams = (a, b) => {
     if (b.wins !== a.wins) return b.wins - a.wins;
     if (b.diff !== a.diff) return b.diff - a.diff;
@@ -197,7 +209,6 @@ function generateKnockoutBracket() {
   groupWinners.sort(compareTeams);
   groupRunnersUp.sort(compareTeams);
 
-  // Take all group winners first, then top runner-up(s) to reach 4 total teams
   const qualified = [...groupWinners];
   for (let i = 0; i < groupRunnersUp.length && qualified.length < 4; i++) {
     qualified.push(groupRunnersUp[i]);
@@ -208,8 +219,6 @@ function generateKnockoutBracket() {
   const team3 = qualified[2] ? qualified[2].name : 'Seed 3';
   const team4 = qualified[3] ? qualified[3].name : 'Seed 4';
 
-  // Seed 1 vs Seed 4 (Best Winner vs Wildcard)
-  // Seed 2 vs Seed 3 (2nd Best Winner vs 3rd Best Winner)
   const matches = [
     { id: 101, label: 'Semifinal 1', teamA: team1, teamB: team4, scoreA: 0, scoreB: 0, status: 'READY', winner: null, loser: null },
     { id: 102, label: 'Semifinal 2', teamA: team2, teamB: team3, scoreA: 0, scoreB: 0, status: 'READY', winner: null, loser: null },
@@ -225,6 +234,7 @@ io.on('connection', (socket) => {
 
   socket.on('setupTournament', async ({ numTeams, numGroups }) => {
     tournament = createTournament(numTeams, numGroups);
+    addLog('Tournament Setup', `Created with ${numTeams} teams across ${numGroups} groups.`);
     activeCourts = {
       4: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0, startedAt: null, isPaused: false, elapsedTime: 0 },
       5: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0, startedAt: null, isPaused: false, elapsedTime: 0 },
@@ -238,6 +248,7 @@ io.on('connection', (socket) => {
     if (tournament.groups[group]) {
       const team = tournament.groups[group].find(t => t.id === teamId);
       if (team) {
+        const oldName = team.name;
         team.name = newName;
         tournament.schedule.forEach(m => {
           if (m.group === group) {
@@ -245,6 +256,7 @@ io.on('connection', (socket) => {
             if (m.teamBId === teamId) m.teamB = newName;
           }
         });
+        addLog('Team Renamed', `[Group ${group}] "${oldName}" updated to "${newName}".`);
         await saveData();
         io.emit('stateUpdated', { tournament, activeCourts });
       }
@@ -275,6 +287,7 @@ io.on('connection', (socket) => {
         isPaused: false,
         elapsedTime: 0
       };
+      addLog('Match Assigned', `Match #${match.id} (${match.teamA} vs ${match.teamB}) assigned to Court ${courtNum}.`);
       await saveData();
       io.emit('stateUpdated', { tournament, activeCourts });
     }
@@ -291,9 +304,11 @@ io.on('connection', (socket) => {
         }
         court.isPaused = true;
         court.startedAt = null;
+        addLog('Timer Paused', `Court ${courtNum} timer paused.`);
       } else {
         court.isPaused = false;
         court.startedAt = now;
+        addLog('Timer Resumed', `Court ${courtNum} timer resumed.`);
       }
       await saveData();
       io.emit('stateUpdated', { tournament, activeCourts });
@@ -337,6 +352,7 @@ io.on('connection', (socket) => {
         match.scoreB = court.scoreB;
       }
 
+      addLog('Teams Swapped', `Court ${courtNum} teams swapped.`);
       await saveData();
       io.emit('stateUpdated', { tournament, activeCourts });
     }
@@ -359,6 +375,7 @@ io.on('connection', (socket) => {
         match.scoreA = scoreA;
         match.scoreB = scoreB;
       }
+      addLog('Score Updated', `Court ${courtNum}: ${activeCourts[courtNum].teamA} (${scoreA}) - (${scoreB}) ${activeCourts[courtNum].teamB}`);
       await saveData();
       io.emit('stateUpdated', { tournament, activeCourts });
       io.emit('scoreUpdated', { courtId: courtNum, scoreA, scoreB });
@@ -389,6 +406,8 @@ io.on('connection', (socket) => {
         }
         const durationMin = Math.max(1, Math.round(totalElapsedSec / 60));
         match.duration = `${durationMin} mins`;
+
+        addLog('Match Finished', `Court ${courtNum}: ${match.teamA} [${match.scoreA}] vs ${match.teamB} [${match.scoreB}] (${match.duration}).`);
 
         if (isKnockout) {
           const winner = match.scoreA > match.scoreB ? match.teamA : match.teamB;
@@ -429,12 +448,13 @@ io.on('connection', (socket) => {
 
   socket.on('generateKnockout', async () => {
     generateKnockoutBracket();
+    addLog('Knockout Generated', 'Semifinal and Final brackets generated based on standings.');
     await saveData();
     io.emit('stateUpdated', { tournament, activeCourts });
   });
 
   socket.on('resetTournament', async () => {
-    tournament = { initialized: false, groups: {}, schedule: [], knockout: { generated: false, matches: [] } };
+    tournament = { initialized: false, groups: {}, schedule: [], knockout: { generated: false, matches: [] }, auditLog: [] };
     activeCourts = {
       4: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0, startedAt: null, isPaused: false, elapsedTime: 0 },
       5: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0, startedAt: null, isPaused: false, elapsedTime: 0 },

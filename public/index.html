@@ -20,7 +20,6 @@
     body { font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 20px; background: #f1f5f9; color: #334155; }
     h1 { color: var(--dark-slate); margin: 0; font-size: 22px; }
     
-    /* Watermark Page Background */
     .bg-watermark {
       position: fixed;
       top: 50%;
@@ -33,7 +32,6 @@
       pointer-events: none;
     }
 
-    /* Scroll target padding to prevent fixed nav bar overlapping headers */
     .scroll-target {
       scroll-margin-top: 95px;
     }
@@ -53,7 +51,6 @@
     .header-brand { display: flex; align-items: center; gap: 15px; }
     .header-logo { height: 65px; object-fit: contain; }
 
-    /* Sticky Top Navigation Panel with Larger Buttons */
     .sticky-nav-panel {
       position: sticky;
       top: 10px;
@@ -73,7 +70,6 @@
       border-top: 3px solid var(--primary-red);
     }
 
-    /* Larger, Prominent Navigation Buttons */
     .nav-btn {
       background: #f8fafc;
       color: #1e293b;
@@ -88,7 +84,7 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      height: 38px; /* Fixed height standard for all buttons */
+      height: 38px;
       box-sizing: border-box;
     }
 
@@ -100,7 +96,6 @@
       box-shadow: 0 4px 10px rgba(225, 37, 27, 0.3);
     }
 
-    /* Floating Back To Top Button */
     .back-to-top-btn {
       position: fixed;
       bottom: 25px;
@@ -129,7 +124,6 @@
 
     .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; }
     
-    /* Styled Court Cards */
     .court-card { 
       background: white; 
       padding: 16px; 
@@ -151,7 +145,6 @@
     .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
     .tables-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 15px; }
     
-    /* Styled Group Tables */
     table { width: 100%; border-collapse: collapse; margin-top: 8px; background: white; border-radius: 6px; overflow: hidden; }
     th, td { border-bottom: 1px solid #e2e8f0; padding: 8px 10px; text-align: left; font-size: 13px; vertical-align: middle; }
     th { background: var(--dark-slate); color: white; font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; }
@@ -159,7 +152,6 @@
 
     #scheduleContainer, #knockoutMatchesContainer { padding: 0; overflow: hidden; }
 
-    /* Match Queue Styling */
     .match-item {
       display: flex;
       justify-content: space-between;
@@ -184,16 +176,23 @@
     .btn-red { background: #991b1b; font-weight: bold; padding: 8px 14px; font-size: 12px; }
     .btn-red:hover { background: #7f1d1d; }
     .setup-box { max-width: 400px; margin: 40px auto; text-align: center; }
+
+    /* Audit Log Styling */
+    .audit-log-box {
+      max-height: 250px;
+      overflow-y: auto;
+      background: #f8fafc;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+    }
   </style>
 </head>
 <body id="top">
 
-  <!-- Watermark Background Paddle -->
   <img src="paddle.png" alt="" class="bg-watermark">
 
   <!-- SETUP SCREEN -->
   <div id="setupScreen" class="card setup-box" style="display: none;">
-    <!-- Larger Company Logo -->
     <img src="logo.png" alt="Sanmina Logo" style="height: 140px; max-width: 100%; object-fit: contain; margin-bottom: 5px;">
     
     <h2 style="justify-content: center; border-left: none; padding-left: 0;">
@@ -222,7 +221,7 @@
       <button class="btn-red" onclick="resetTournament()">🔄 Reset Tournament</button>
     </div>
 
-    <!-- STICKY NAVIGATION BAR WITH LARGER BUTTONS AND PADDLE ICON -->
+    <!-- STICKY NAVIGATION BAR -->
     <div class="sticky-nav-panel">
       <button class="nav-btn" onclick="scrollToSection('sec-live-courts')">
         <span style="display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; margin-right: 6px;">
@@ -245,6 +244,11 @@
         <span style="font-size: 15px; line-height: 1; margin-right: 6px;">📋</span>
         <span>Upcoming Queue</span>
       </button>
+
+      <button class="nav-btn" onclick="scrollToSection('sec-audit-log')">
+        <span style="font-size: 15px; line-height: 1; margin-right: 6px;">📜</span>
+        <span>Audit Log</span>
+      </button>
     </div>
 
     <h2 id="sec-live-courts" class="scroll-target">
@@ -266,6 +270,14 @@
 
     <h2 id="sec-queue" class="scroll-target">📋 Upcoming Round-Robin Queue</h2>
     <div class="card" id="scheduleContainer"></div>
+
+    <h2 id="sec-audit-log" class="scroll-target" style="justify-content: space-between; padding-right: 10px;">
+      <span>📜 Audit Log</span>
+      <button onclick="exportAuditLogCSV()" style="background: #0284c7; font-size: 12px;">📥 Export Audit Log (CSV)</button>
+    </h2>
+    <div class="card">
+      <div class="audit-log-box" id="auditLogContainer"></div>
+    </div>
   </div>
 
   <!-- FLOATING BACK-TO-TOP BUTTON -->
@@ -278,6 +290,7 @@
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
+    let currentAuditLog = [];
 
     function scrollToSection(id) {
       const el = document.getElementById(id);
@@ -317,6 +330,8 @@
 
       document.getElementById('setupScreen').style.display = 'none';
       document.getElementById('dashboardScreen').style.display = 'block';
+
+      currentAuditLog = tournament.auditLog || [];
 
       // Render Court Cards (Courts 4, 5, 6)
       let courtsHtml = '';
@@ -419,6 +434,22 @@
           </div>`;
       });
       document.getElementById('scheduleContainer').innerHTML = scheduleHtml;
+
+      // Render Audit Log
+      let logHtml = '<table><tr><th style="width:110px;">Time</th><th style="width:160px;">Action</th><th>Details</th></tr>';
+      if (currentAuditLog.length === 0) {
+        logHtml += '<tr><td colspan="3" style="text-align:center; color:#94a3b8;">No audit entries recorded yet.</td></tr>';
+      } else {
+        currentAuditLog.forEach(log => {
+          logHtml += `<tr>
+            <td style="font-family: monospace;">${log.timestamp}</td>
+            <td style="font-weight:600; color:var(--dark-slate);">${log.action}</td>
+            <td style="color:#475569;">${log.details}</td>
+          </tr>`;
+        });
+      }
+      logHtml += '</table>';
+      document.getElementById('auditLogContainer').innerHTML = logHtml;
     }
 
     function saveTeamName(group, teamId) {
@@ -451,6 +482,25 @@
       if (confirm("⚠️ CRITICAL WARNING: Are you sure you want to RESET EVERYTHING?\n\nThis will return to the setup screen!")) {
         socket.emit('resetTournament');
       }
+    }
+
+    function exportAuditLogCSV() {
+      if (!currentAuditLog || currentAuditLog.length === 0) {
+        alert("No audit log data available to export.");
+        return;
+      }
+      let csvContent = "data:text/csv;charset=utf-8,Timestamp,Action,Details\n";
+      currentAuditLog.forEach(row => {
+        const cleanDetails = `"${row.details.replace(/"/g, '""')}"`;
+        csvContent += `${row.timestamp},"${row.action}",${cleanDetails}\n`;
+      });
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `tournament_audit_log_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
   </script>
 </body>
