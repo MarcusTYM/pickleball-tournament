@@ -22,7 +22,6 @@
       color: #0f172a;
     }
 
-    /* ENLARGED WHITE HEADER CONTAINER */
     .header-card {
       background: #ffffff;
       border-radius: 12px;
@@ -39,7 +38,6 @@
       gap: 16px;
     }
     
-    /* LARGER LOGO & TITLE */
     .brand-logo { height: 50px; object-fit: contain; }
     h1 { font-size: 28px; font-weight: 800; margin: 0; text-align: center; color: #1e293b; letter-spacing: -0.5px; }
 
@@ -158,7 +156,7 @@
       letter-spacing: 0.5px;
     }
 
-    /* COIN TOSS MODAL & ANIMATION */
+    /* COIN TOSS MODAL & INTERACTIVE COIN */
     .modal-overlay {
       display: none;
       position: fixed;
@@ -183,6 +181,7 @@
       width: 120px;
       height: 120px;
       margin: 20px auto;
+      cursor: pointer;
     }
     .coin {
       width: 100%;
@@ -233,7 +232,6 @@
 </head>
 <body>
 
-  <!-- ENLARGED WHITE CONTAINER BOX FOR HEADER -->
   <div class="header-card">
     <div class="brand-header">
       <img src="/logo.png" alt="Logo" class="brand-logo">
@@ -247,7 +245,7 @@
   </div>
 
   <div class="control-actions">
-    <button class="btn-action btn-coin" onclick="startCoinToss()">🪙 Coin Toss</button>
+    <button class="btn-action btn-coin" onclick="openCoinModal()">🪙 Coin Toss</button>
     <button class="btn-action btn-swap" onclick="handleSwapSides()">↔ Swap Sides</button>
   </div>
 
@@ -269,17 +267,17 @@
 
   <button class="btn-submit" onclick="finishMatch()">🏁 Finish Match & Submit Score</button>
 
-  <!-- COIN TOSS POPUP MODAL -->
+  <!-- COIN TOSS MODAL -->
   <div class="modal-overlay" id="coinModal">
     <div class="modal-card">
-      <h3 style="margin: 0; color: #1e293b; font-size: 20px;" id="modalTitle">Flipping Coin...</h3>
-      <div class="coin-wrapper">
+      <h3 style="margin: 0; color: #1e293b; font-size: 20px;" id="modalTitle">Coin Toss</h3>
+      <div class="coin-wrapper" onclick="flipCoin()">
         <div class="coin" id="coinElement">
           <div class="coin-face coin-heads">HEADS</div>
           <div class="coin-face coin-tails">TAILS</div>
         </div>
       </div>
-      <div id="resultText" style="font-size: 16px; font-weight: 800; color: #0284c7; min-height: 24px;"></div>
+      <div id="resultText" style="font-size: 16px; font-weight: 800; color: #0284c7; min-height: 24px;">Click the coin to flip!</div>
       <button class="btn-close-modal" id="closeModalBtn" onclick="closeCoinModal()">Close</button>
     </div>
   </div>
@@ -302,19 +300,16 @@
 
     function formatName(name) {
       if (!name) return '';
-      
       if (name.includes('/')) {
         return name.split('/').map(s => s.trim()).filter(Boolean).join('\n');
       }
       if (name.includes('&')) {
         return name.split('&').map(s => s.trim()).filter(Boolean).join('\n');
       }
-      
       const parts = name.trim().split(/\s+/);
       if (parts.length > 1) {
         return `${parts[0]}\n${parts.slice(1).join(' ')}`;
       }
-      
       return name;
     }
 
@@ -367,22 +362,33 @@
       socket.emit('swapTeams', { courtId });
     }
 
-    /* 3-SECOND ANIMATED COIN TOSS */
+    /* CLICK-TO-FLIP COIN TOSS LOGIC */
     let coinRotation = 0;
-    function startCoinToss() {
-      const modal = document.getElementById('coinModal');
+    let isFlipping = false;
+
+    function openCoinModal() {
+      document.getElementById('coinModal').style.display = 'flex';
+      document.getElementById('modalTitle').innerText = 'Coin Toss';
+      document.getElementById('resultText').innerText = 'Click the coin to flip!';
+      document.getElementById('closeModalBtn').style.display = 'block';
+      isFlipping = false;
+    }
+
+    function flipCoin() {
+      if (isFlipping) return;
+      isFlipping = true;
+
       const coin = document.getElementById('coinElement');
       const modalTitle = document.getElementById('modalTitle');
       const resultText = document.getElementById('resultText');
       const closeBtn = document.getElementById('closeModalBtn');
 
-      modal.style.display = 'flex';
-      modalTitle.innerText = 'Flipping Coin...';
+      modalTitle.innerText = 'Flipping...';
       resultText.innerText = '';
       closeBtn.style.display = 'none';
 
       const isHeads = Math.random() < 0.5;
-      const extraSpins = 10 * 360; // 10 full rotations over 3 seconds
+      const extraSpins = 10 * 360; // Spins for 3 seconds
       const targetDegree = isHeads ? extraSpins : extraSpins + 180;
       
       coinRotation += targetDegree;
@@ -390,15 +396,15 @@
 
       setTimeout(() => {
         const winningSide = isHeads ? 'HEADS' : 'TAILS';
-        const winningTeam = isHeads ? (matchData.teamA || 'Team A') : (matchData.teamB || 'Team B');
-        
-        modalTitle.innerText = `${winningSide}!`;
-        resultText.innerText = `${winningTeam} serves / chooses side!`;
+        modalTitle.innerText = `Result: ${winningSide}`;
+        resultText.innerText = winningSide;
         closeBtn.style.display = 'block';
+        isFlipping = false;
       }, 3000);
     }
 
     function closeCoinModal() {
+      if (isFlipping) return;
       document.getElementById('coinModal').style.display = 'none';
     }
 
