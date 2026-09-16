@@ -267,6 +267,8 @@ io.on('connection', (socket) => {
         matchId: match.id,
         teamA: match.teamA,
         teamB: match.teamB,
+        teamAId: match.teamAId,
+        teamBId: match.teamBId,
         scoreA: match.scoreA || 0,
         scoreB: match.scoreB || 0,
         startedAt: Date.now(),
@@ -293,6 +295,48 @@ io.on('connection', (socket) => {
         court.isPaused = false;
         court.startedAt = now;
       }
+      await saveData();
+      io.emit('stateUpdated', { tournament, activeCourts });
+    }
+  });
+
+  socket.on('swapTeams', async (data) => {
+    const courtNum = data.courtId || data.courtNum;
+    const court = activeCourts[courtNum];
+
+    if (court) {
+      if (data.teamA !== undefined && data.teamB !== undefined) {
+        court.teamA = data.teamA;
+        court.teamB = data.teamB;
+        court.scoreA = data.scoreA;
+        court.scoreB = data.scoreB;
+      } else {
+        const tempTeam = court.teamA;
+        court.teamA = court.teamB;
+        court.teamB = tempTeam;
+
+        const tempScore = court.scoreA;
+        court.scoreA = court.scoreB;
+        court.scoreB = tempScore;
+      }
+
+      const tempId = court.teamAId;
+      court.teamAId = court.teamBId;
+      court.teamBId = tempId;
+
+      let match = tournament.schedule.find(m => m.id === court.matchId);
+      if (!match && tournament.knockout && tournament.knockout.matches) {
+        match = tournament.knockout.matches.find(m => m.id === court.matchId);
+      }
+      if (match) {
+        match.teamA = court.teamA;
+        match.teamB = court.teamB;
+        match.teamAId = court.teamAId;
+        match.teamBId = court.teamBId;
+        match.scoreA = court.scoreA;
+        match.scoreB = court.scoreB;
+      }
+
       await saveData();
       io.emit('stateUpdated', { tournament, activeCourts });
     }

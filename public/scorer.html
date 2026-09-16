@@ -372,12 +372,22 @@
       matchData.scoreA = matchData.scoreB;
       matchData.scoreB = tempScore;
 
+      const tempTeamAId = matchData.teamAId;
+      matchData.teamAId = matchData.teamBId;
+      matchData.teamBId = tempTeamAId;
+
       document.getElementById('teamAName').innerText = formatName(matchData.teamA);
       document.getElementById('teamBName').innerText = formatName(matchData.teamB);
       document.getElementById('scoreA').innerText = matchData.scoreA;
       document.getElementById('scoreB').innerText = matchData.scoreB;
 
-      socket.emit('swapTeams', { courtId });
+      socket.emit('swapTeams', { 
+        courtId,
+        teamA: matchData.teamA,
+        teamB: matchData.teamB,
+        scoreA: matchData.scoreA,
+        scoreB: matchData.scoreB
+      });
     }
 
     /* FLIP & LOCK LOGIC */
