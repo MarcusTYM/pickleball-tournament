@@ -183,6 +183,9 @@
       margin: 20px auto;
       cursor: pointer;
     }
+    .coin-wrapper.locked {
+      cursor: not-allowed;
+    }
     .coin {
       width: 100%;
       height: 100%;
@@ -209,17 +212,17 @@
     .coin-tails { background: linear-gradient(135deg, #94a3b8, #475569); border-color: #cbd5e1; transform: rotateY(180deg); }
     
     .instruction-text {
-      font-size: 14px;
-      font-weight: 700;
-      color: #64748b;
-      margin-top: 12px;
+      font-size: 15px;
+      font-weight: 800;
+      color: #0284c7; /* MATCHING BLUE COLOR */
+      margin-top: 8px;
       margin-bottom: 4px;
       min-height: 20px;
     }
 
     .btn-close-modal {
       display: none;
-      margin-top: 10px;
+      margin-top: 14px;
       width: 100%;
       padding: 10px;
       background: #0f172a;
@@ -280,7 +283,7 @@
   <div class="modal-overlay" id="coinModal">
     <div class="modal-card">
       <h3 style="margin: 0; color: #1e293b; font-size: 20px;" id="modalTitle">Coin Toss</h3>
-      <div class="coin-wrapper" onclick="flipCoin()">
+      <div class="coin-wrapper" id="coinWrapper" onclick="flipCoin()">
         <div class="coin" id="coinElement">
           <div class="coin-face coin-heads">HEADS</div>
           <div class="coin-face coin-tails">TAILS</div>
@@ -372,9 +375,9 @@
       socket.emit('swapTeams', { courtId });
     }
 
-    /* ACCURATE FLIP LOGIC */
-    let currentRotation = 0;
+    /* FLIP & LOCK LOGIC */
     let isFlipping = false;
+    let isHasFlipped = false;
 
     function openCoinModal() {
       document.getElementById('coinModal').style.display = 'flex';
@@ -383,14 +386,16 @@
       document.getElementById('instructionText').innerText = '';
       document.getElementById('closeModalBtn').style.display = 'block';
       
-      // Reset coin orientation to HEADS facing front
-      currentRotation = 0;
-      document.getElementById('coinElement').style.transform = 'rotateY(0deg)';
+      // Reset state for new modal session
       isFlipping = false;
+      isHasFlipped = false;
+      document.getElementById('coinWrapper').classList.remove('locked');
+      document.getElementById('coinElement').style.transform = 'rotateY(0deg)';
     }
 
     function flipCoin() {
-      if (isFlipping) return;
+      // Prevent clicking while spinning OR if already flipped once
+      if (isFlipping || isHasFlipped) return;
       isFlipping = true;
 
       const coin = document.getElementById('coinElement');
@@ -406,10 +411,7 @@
 
       const isHeads = Math.random() < 0.5;
 
-      // Ensure rotation starts from absolute baseline each time so faces stay aligned
-      // 3600 deg = 10 full spins
-      // HEADS = 3600 deg (0 mod 360) -> HEADS face shown
-      // TAILS = 3780 deg (180 mod 360) -> TAILS face shown
+      // HEADS = 3600 deg, TAILS = 3780 deg
       const targetDegree = isHeads ? 3600 : 3780;
       
       coin.style.transform = `rotateY(${targetDegree}deg)`;
@@ -420,7 +422,10 @@
         resultText.innerText = winningSide;
         instructionText.innerText = 'Please choose side or serve';
         closeBtn.style.display = 'block';
+        
         isFlipping = false;
+        isHasFlipped = true; // Lock further coin clicks
+        document.getElementById('coinWrapper').classList.add('locked');
       }, 3000);
     }
 
