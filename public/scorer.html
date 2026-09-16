@@ -22,12 +22,12 @@
       color: #0f172a;
     }
 
-    /* RESTORED WHITE HEADER CONTAINER */
+    /* ENLARGED WHITE HEADER CONTAINER */
     .header-card {
       background: #ffffff;
-      border-radius: 8px;
-      padding: 12px 20px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      border-radius: 12px;
+      padding: 16px 24px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
       margin-bottom: 20px;
       border: 1px solid var(--border-color);
     }
@@ -36,17 +36,18 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 12px;
+      gap: 16px;
     }
-    .brand-logo { height: 32px; object-fit: contain; }
-    h1 { font-size: 20px; font-weight: 800; margin: 0; text-align: center; color: #1e293b; }
+    
+    /* LARGER LOGO & TITLE */
+    .brand-logo { height: 50px; object-fit: contain; }
+    h1 { font-size: 28px; font-weight: 800; margin: 0; text-align: center; color: #1e293b; letter-spacing: -0.5px; }
 
     .header-status-box {
       text-align: center;
       margin-bottom: 20px;
     }
     
-    /* ENLARGED COURT TITLE */
     .court-title {
       font-size: 26px;
       font-weight: 800;
@@ -56,7 +57,6 @@
       letter-spacing: -0.5px;
     }
 
-    /* ENLARGED RUNNING TIMER */
     .timer-display {
       font-size: 24px;
       font-weight: 800;
@@ -158,7 +158,73 @@
       letter-spacing: 0.5px;
     }
 
+    /* COIN TOSS MODAL & ANIMATION */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(4px);
+      z-index: 999;
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-card {
+      background: white;
+      padding: 30px;
+      border-radius: 16px;
+      text-align: center;
+      box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3);
+      width: 90%;
+      max-width: 340px;
+    }
+    .coin-wrapper {
+      perspective: 1000px;
+      width: 120px;
+      height: 120px;
+      margin: 20px auto;
+    }
+    .coin {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 3s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+    .coin-face {
+      position: absolute;
+      width: 100%; height: 100%;
+      border-radius: 50%;
+      backface-visibility: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: 900;
+      color: white;
+      border: 4px solid #f59e0b;
+      box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
+    }
+    .coin-heads { background: linear-gradient(135deg, #fbbf24, #d97706); }
+    .coin-tails { background: linear-gradient(135deg, #94a3b8, #475569); border-color: #cbd5e1; transform: rotateY(180deg); }
+    
+    .btn-close-modal {
+      display: none;
+      margin-top: 15px;
+      width: 100%;
+      padding: 10px;
+      background: #0f172a;
+      color: white;
+      font-weight: 700;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
     @media (max-width: 600px) {
+      .brand-logo { height: 38px; }
+      h1 { font-size: 22px; }
       .court-title { font-size: 22px; }
       .timer-display { font-size: 20px; }
       .score-value { font-size: 48px; }
@@ -167,7 +233,7 @@
 </head>
 <body>
 
-  <!-- RESTORED WHITE CONTAINER BOX FOR HEADER -->
+  <!-- ENLARGED WHITE CONTAINER BOX FOR HEADER -->
   <div class="header-card">
     <div class="brand-header">
       <img src="/logo.png" alt="Logo" class="brand-logo">
@@ -181,7 +247,7 @@
   </div>
 
   <div class="control-actions">
-    <button class="btn-action btn-coin" onclick="handleCoinToss()">🪙 Coin Toss</button>
+    <button class="btn-action btn-coin" onclick="startCoinToss()">🪙 Coin Toss</button>
     <button class="btn-action btn-swap" onclick="handleSwapSides()">↔ Swap Sides</button>
   </div>
 
@@ -203,6 +269,21 @@
 
   <button class="btn-submit" onclick="finishMatch()">🏁 Finish Match & Submit Score</button>
 
+  <!-- COIN TOSS POPUP MODAL -->
+  <div class="modal-overlay" id="coinModal">
+    <div class="modal-card">
+      <h3 style="margin: 0; color: #1e293b; font-size: 20px;" id="modalTitle">Flipping Coin...</h3>
+      <div class="coin-wrapper">
+        <div class="coin" id="coinElement">
+          <div class="coin-face coin-heads">HEADS</div>
+          <div class="coin-face coin-tails">TAILS</div>
+        </div>
+      </div>
+      <div id="resultText" style="font-size: 16px; font-weight: 800; color: #0284c7; min-height: 24px;"></div>
+      <button class="btn-close-modal" id="closeModalBtn" onclick="closeCoinModal()">Close</button>
+    </div>
+  </div>
+
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
@@ -222,7 +303,6 @@
     function formatName(name) {
       if (!name) return '';
       
-      // Clean slashes and ampersands without leaving trailing symbols
       if (name.includes('/')) {
         return name.split('/').map(s => s.trim()).filter(Boolean).join('\n');
       }
@@ -287,9 +367,39 @@
       socket.emit('swapTeams', { courtId });
     }
 
-    function handleCoinToss() {
-      const winner = Math.random() < 0.5 ? matchData.teamA : matchData.teamB;
-      alert(`Coin Toss Winner: ${winner || 'Random Side'}`);
+    /* 3-SECOND ANIMATED COIN TOSS */
+    let coinRotation = 0;
+    function startCoinToss() {
+      const modal = document.getElementById('coinModal');
+      const coin = document.getElementById('coinElement');
+      const modalTitle = document.getElementById('modalTitle');
+      const resultText = document.getElementById('resultText');
+      const closeBtn = document.getElementById('closeModalBtn');
+
+      modal.style.display = 'flex';
+      modalTitle.innerText = 'Flipping Coin...';
+      resultText.innerText = '';
+      closeBtn.style.display = 'none';
+
+      const isHeads = Math.random() < 0.5;
+      const extraSpins = 10 * 360; // 10 full rotations over 3 seconds
+      const targetDegree = isHeads ? extraSpins : extraSpins + 180;
+      
+      coinRotation += targetDegree;
+      coin.style.transform = `rotateY(${coinRotation}deg)`;
+
+      setTimeout(() => {
+        const winningSide = isHeads ? 'HEADS' : 'TAILS';
+        const winningTeam = isHeads ? (matchData.teamA || 'Team A') : (matchData.teamB || 'Team B');
+        
+        modalTitle.innerText = `${winningSide}!`;
+        resultText.innerText = `${winningTeam} serves / chooses side!`;
+        closeBtn.style.display = 'block';
+      }, 3000);
+    }
+
+    function closeCoinModal() {
+      document.getElementById('coinModal').style.display = 'none';
     }
 
     function finishMatch() {
