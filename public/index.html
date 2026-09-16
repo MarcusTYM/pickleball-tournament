@@ -20,6 +20,19 @@
     body { font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 20px; background: #f1f5f9; color: #334155; }
     h1 { color: var(--dark-slate); margin: 0; font-size: 22px; }
     
+    /* Watermark Page Background */
+    .bg-watermark {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(30deg);
+      width: 450px;
+      max-width: 80vw;
+      opacity: 0.3;
+      z-index: -1;
+      pointer-events: none;
+    }
+
     /* Scroll target padding to prevent fixed nav bar overlapping headers */
     .scroll-target {
       scroll-margin-top: 95px;
@@ -62,30 +75,30 @@
 
     /* Larger, Prominent Navigation Buttons */
     .nav-btn {
-  background: #f8fafc;
-  color: #1e293b;
-  border: 1.5px solid #cbd5e1;
-  padding: 8px 16px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 700;
-  font-size: 14px;
-  transition: all 0.2s ease-in-out;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 38px; /* Fixed height standard for all buttons */
-  box-sizing: border-box;
-}
+      background: #f8fafc;
+      color: #1e293b;
+      border: 1.5px solid #cbd5e1;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 14px;
+      transition: all 0.2s ease-in-out;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 38px; /* Fixed height standard for all buttons */
+      box-sizing: border-box;
+    }
 
-.nav-btn:hover, .nav-btn:focus {
-  background: var(--primary-red);
-  border-color: var(--primary-red);
-  color: white;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(225, 37, 27, 0.3);
-}
+    .nav-btn:hover, .nav-btn:focus {
+      background: var(--primary-red);
+      border-color: var(--primary-red);
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 10px rgba(225, 37, 27, 0.3);
+    }
 
     /* Floating Back To Top Button */
     .back-to-top-btn {
@@ -175,15 +188,18 @@
 </head>
 <body id="top">
 
+  <!-- Watermark Background Paddle -->
+  <img src="paddle.png" alt="" class="bg-watermark">
+
   <!-- SETUP SCREEN -->
   <div id="setupScreen" class="card setup-box" style="display: none;">
     <!-- Larger Company Logo -->
     <img src="logo.png" alt="Sanmina Logo" style="height: 140px; max-width: 100%; object-fit: contain; margin-bottom: 5px;">
     
-<h2 style="justify-content: center; border-left: none; padding-left: 0;">
-  <img src="paddle.png" alt="Paddle" style="height: 62px; width: auto; transform: rotate(45deg); margin-right: 10px; display: inline-block;">
-  <span>Tournament Setup</span>
-</h2>
+    <h2 style="justify-content: center; border-left: none; padding-left: 0;">
+      <img src="paddle.png" alt="Paddle" style="height: 62px; width: auto; transform: rotate(35deg); margin-right: 10px; display: inline-block;">
+      <span>Tournament Setup</span>
+    </h2>
     <p style="color: #64748b; font-size: 14px;">Configure event parameters:</p>
     <div style="margin-bottom: 15px; text-align: left;">
       <label><strong>Total Number of Pairs:</strong></label><br>
@@ -207,33 +223,32 @@
     </div>
 
     <!-- STICKY NAVIGATION BAR WITH LARGER BUTTONS AND PADDLE ICON -->
-<div class="sticky-nav-panel">
-  <button class="nav-btn" onclick="scrollToSection('sec-live-courts')">
-    <span style="display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; margin-right: 6px;">
-      <img src="paddle.png" alt="" style="height: 15px; width: auto; transform: rotate(-45deg);">
-    </span>
-    <span>Live Courts</span>
-  </button>
+    <div class="sticky-nav-panel">
+      <button class="nav-btn" onclick="scrollToSection('sec-live-courts')">
+        <span style="display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; margin-right: 6px;">
+          <img src="paddle.png" alt="" style="height: 15px; width: auto; transform: rotate(-45deg);">
+        </span>
+        <span>Live Courts</span>
+      </button>
 
-  <button class="nav-btn" onclick="scrollToSection('sec-knockout')">
-    <span style="font-size: 15px; line-height: 1; margin-right: 6px;">🏆</span>
-    <span>Knockout Stage</span>
-  </button>
+      <button class="nav-btn" onclick="scrollToSection('sec-knockout')">
+        <span style="font-size: 15px; line-height: 1; margin-right: 6px;">🏆</span>
+        <span>Knockout Stage</span>
+      </button>
 
-  <button class="nav-btn" onclick="scrollToSection('sec-standings')">
-    <span style="font-size: 15px; line-height: 1; margin-right: 6px;">📊</span>
-    <span>Group Standings</span>
-  </button>
+      <button class="nav-btn" onclick="scrollToSection('sec-standings')">
+        <span style="font-size: 15px; line-height: 1; margin-right: 6px;">📊</span>
+        <span>Group Standings</span>
+      </button>
 
-  <button class="nav-btn" onclick="scrollToSection('sec-queue')">
-    <span style="font-size: 15px; line-height: 1; margin-right: 6px;">📋</span>
-    <span>Upcoming Queue</span>
-  </button>
-</div>
+      <button class="nav-btn" onclick="scrollToSection('sec-queue')">
+        <span style="font-size: 15px; line-height: 1; margin-right: 6px;">📋</span>
+        <span>Upcoming Queue</span>
+      </button>
+    </div>
 
-   <h2 id="sec-live-courts" class="scroll-target">
+    <h2 id="sec-live-courts" class="scroll-target">
       <img src="paddle.png" alt="Paddle" style="height: 32px; width: auto; vertical-align: middle; transform: rotate(45deg); margin-right: 12px; display: inline-block;">
-
       Live Courts
     </h2>
     <div class="grid-3" id="courtsContainer"></div>
