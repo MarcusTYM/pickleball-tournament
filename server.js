@@ -42,7 +42,7 @@ let activeCourts = {
 function addLog(action, details) {
   if (!tournament.auditLog) tournament.auditLog = [];
   tournament.auditLog.unshift({
-    timestamp: new Date().toLocaleTimeString('en-US', { hour12: false }),
+    timestamp: new Date().toLocaleTimeString('en-US', { hour12: false, timeZone: 'Asia/Kuala_Lumpur' }),
     action,
     details
   });
