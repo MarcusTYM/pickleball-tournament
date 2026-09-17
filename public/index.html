@@ -189,21 +189,22 @@
     /* Footer Styling */
     footer {
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 8px;
+      gap: 12px;
       padding: 24px 10px;
       font-size: 13px;
       color: #64748b;
       margin-top: 50px;
       border-top: 1px solid #cbd5e1;
+      text-align: center;
     }
 
     .footer-club-logo {
-      height: 36px;
+      height: 48px;
       width: auto;
       object-fit: contain;
+      vertical-align: middle;
     }
   </style>
 </head>
@@ -303,9 +304,9 @@
   <!-- FLOATING BACK-TO-TOP BUTTON -->
   <button class="back-to-top-btn" onclick="scrollToTop()" title="Back to Top">▲</button>
 
-  <footer>
-    <img src="clublogo.png" alt="Sanmina Plant 2 Pickleball Club Logo" class="footer-club-logo">
-    <p style="margin: 0;">© 2026 Sanmina Plant 2 Pickleball Club. All Rights Reserved.</p>
+<footer>
+    <span>© 2026 Sanmina Plant 2 Pickleball Club. All Rights Reserved.</span>
+    <img src="clublogo.jpg" alt="Sanmina Plant 2 Pickleball Club Logo" class="footer-club-logo">
   </footer>
 
   <script src="/socket.io/socket.io.js"></script>
