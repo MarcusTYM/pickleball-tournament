@@ -118,9 +118,13 @@
       font-variant-numeric: tabular-nums;
     }
 
+    .btn-score-group {
+      display: flex;
+      gap: 10px;
+    }
     .btn-score-add {
-      width: 100%;
-      padding: 16px;
+      flex: 1;
+      padding: 14px;
       font-size: 22px;
       font-weight: 800;
       background: var(--primary-red);
@@ -128,17 +132,16 @@
       border: none;
       border-radius: 8px;
       cursor: pointer;
-      margin-bottom: 8px;
     }
     .btn-score-sub {
-      width: 100%;
-      padding: 10px;
-      font-size: 14px;
-      font-weight: 700;
+      flex: 1;
+      padding: 14px;
+      font-size: 22px;
+      font-weight: 800;
       background: #e2e8f0;
       color: #475569;
       border: none;
-      border-radius: 6px;
+      border-radius: 8px;
       cursor: pointer;
     }
 
@@ -265,15 +268,19 @@
     <div class="team-card">
       <div class="team-name" id="teamAName">Team A</div>
       <div class="score-value" id="scoreA">0</div>
-      <button class="btn-score-add" onclick="updateScore('A', 1)">+1</button>
-      <button class="btn-score-sub" onclick="updateScore('A', -1)">-1</button>
+      <div class="btn-score-group">
+        <button class="btn-score-add" onclick="updateScore('A', 1)">+1</button>
+        <button class="btn-score-sub" onclick="updateScore('A', -1)">-1</button>
+      </div>
     </div>
 
     <div class="team-card">
       <div class="team-name" id="teamBName">Team B</div>
       <div class="score-value" id="scoreB">0</div>
-      <button class="btn-score-add" onclick="updateScore('B', 1)">+1</button>
-      <button class="btn-score-sub" onclick="updateScore('B', -1)">-1</button>
+      <div class="btn-score-group">
+        <button class="btn-score-add" onclick="updateScore('B', 1)">+1</button>
+        <button class="btn-score-sub" onclick="updateScore('B', -1)">-1</button>
+      </div>
     </div>
   </div>
 
