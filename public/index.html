@@ -185,6 +185,26 @@
       border: 1px solid var(--border-color);
       border-radius: 6px;
     }
+
+    /* Footer Styling */
+    footer {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 24px 10px;
+      font-size: 13px;
+      color: #64748b;
+      margin-top: 50px;
+      border-top: 1px solid #cbd5e1;
+    }
+
+    .footer-club-logo {
+      height: 36px;
+      width: auto;
+      object-fit: contain;
+    }
   </style>
 </head>
 <body id="top">
@@ -283,8 +303,9 @@
   <!-- FLOATING BACK-TO-TOP BUTTON -->
   <button class="back-to-top-btn" onclick="scrollToTop()" title="Back to Top">▲</button>
 
-  <footer style="text-align: center; padding: 24px 10px; font-size: 13px; color: #64748b; margin-top: 50px; border-top: 1px solid #cbd5e1;">
-    <p>© 2026 Sanmina Plant 2 Pickleball Club. All Rights Reserved.</p>
+  <footer>
+    <img src="clublogo.jpg" alt="Sanmina Plant 2 Pickleball Club Logo" class="footer-club-logo">
+    <p style="margin: 0;">© 2026 Sanmina Plant 2 Pickleball Club. All Rights Reserved.</p>
   </footer>
 
   <script src="/socket.io/socket.io.js"></script>
@@ -485,35 +506,32 @@
     }
 
     function exportAuditLogCSV() {
-  if (!currentAuditLog || currentAuditLog.length === 0) {
-    alert("No audit log data available to export.");
-    return;
-  }
-  
-  // Create CSV header
-  let csvContent = "Timestamp,Action,Details\n";
-  
-  // Format each row with double-quote escaping
-  currentAuditLog.forEach(row => {
-    const timestamp = `"${(row.timestamp || '').toString().replace(/"/g, '""')}"`;
-    const action = `"${(row.action || '').toString().replace(/"/g, '""')}"`;
-    const details = `"${(row.details || '').toString().replace(/"/g, '""')}"`;
-    csvContent += `${timestamp},${action},${details}\n`;
-  });
+      if (!currentAuditLog || currentAuditLog.length === 0) {
+        alert("No audit log data available to export.");
+        return;
+      }
+      
+      let csvContent = "Timestamp,Action,Details\n";
+      
+      currentAuditLog.forEach(row => {
+        const timestamp = `"${(row.timestamp || '').toString().replace(/"/g, '""')}"`;
+        const action = `"${(row.action || '').toString().replace(/"/g, '""')}"`;
+        const details = `"${(row.details || '').toString().replace(/"/g, '""')}"`;
+        csvContent += `${timestamp},${action},${details}\n`;
+      });
 
-  // Use Blob with UTF-8 BOM for proper Excel text rendering
-  const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  
-  const link = document.createElement("a");
-  link.setAttribute("href", url);
-  link.setAttribute("download", `tournament_audit_log_${new Date().toISOString().slice(0,10)}.csv`);
-  document.body.appendChild(link);
-  link.click();
-  
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-}
+      const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `tournament_audit_log_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
   </script>
 </body>
 </html>
