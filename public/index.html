@@ -205,6 +205,7 @@
       width: auto;
       object-fit: contain;
       vertical-align: middle;
+      mix-blend-mode: multiply; /* Removes white background */
     }
   </style>
 </head>
@@ -305,8 +306,8 @@
   <button class="back-to-top-btn" onclick="scrollToTop()" title="Back to Top">▲</button>
 
 <footer>
-    <span>© 2026 Sanmina Plant 2 Pickleball Club. All Rights Reserved.</span>
     <img src="clublogo.png" alt="Sanmina Plant 2 Pickleball Club Logo" class="footer-club-logo">
+    <span>© 2026 Sanmina Plant 2 Pickleball Club. All Rights Reserved.</span>
   </footer>
 
   <script src="/socket.io/socket.io.js"></script>
