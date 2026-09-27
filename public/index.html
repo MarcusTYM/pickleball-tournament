@@ -333,6 +333,10 @@
       if (el) el.innerText = `${scoreA} - ${scoreB}`;
     });
 
+    socket.on('errorMsg', (msg) => {
+      alert(msg);
+    });
+
     function startTournament() {
       const numTeams = parseInt(document.getElementById('numTeams').value);
       const numGroups = parseInt(document.getElementById('numGroups').value);
@@ -395,12 +399,14 @@
                 ${m.winner ? `<strong style="color:#16a34a; margin-left:10px;">(Winner: ${m.winner})</strong>` : ''}
               </span>
               <div>
-                <select id="assign-court-${m.id}">
-                  <option value="4">Court 4</option>
-                  <option value="5">Court 5</option>
-                  <option value="6">Court 6</option>
-                </select>
-                <button onclick="assignMatch(${m.id})">Send to Court</button>
+                ${m.status === 'READY' ? `
+                  <select id="assign-court-${m.id}">
+                    <option value="4">Court 4</option>
+                    <option value="5">Court 5</option>
+                    <option value="6">Court 6</option>
+                  </select>
+                  <button onclick="assignMatch(${m.id})">Send to Court</button>
+                ` : `<em style="color: #94a3b8; font-size: 13px; font-weight: 600;">Status: ${m.status === 'IN_PROGRESS' ? `Court ${m.court} (In Progress)` : m.status}</em>`}
               </div>
             </div>`;
         });

@@ -263,16 +263,22 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('assignMatch', async (data) => {
+socket.on('assignMatch', async (data) => {
     const matchId = data.matchId;
     const courtNum = data.courtId || data.courtNum;
+
+    // Prevent assigning if the target court already has an active match
+    if (activeCourts[courtNum] && activeCourts[courtNum].matchId) {
+      return socket.emit('errorMsg', `Court ${courtNum} is already in use!`);
+    }
 
     let match = tournament.schedule.find(m => m.id === matchId);
     if (!match && tournament.knockout && tournament.knockout.matches) {
       match = tournament.knockout.matches.find(m => m.id === matchId);
     }
 
-    if (match) {
+    // Prevent assigning if match is already in progress or completed
+    if (match && match.status !== 'IN_PROGRESS' && match.status !== 'COMPLETED') {
       match.status = 'IN_PROGRESS';
       match.court = courtNum;
       activeCourts[courtNum] = {
