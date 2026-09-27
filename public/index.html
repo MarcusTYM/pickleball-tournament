@@ -205,7 +205,7 @@
       width: auto;
       object-fit: contain;
       vertical-align: middle;
-      mix-blend-mode: multiply; /* Removes white background */
+      mix-blend-mode: multiply;
     }
   </style>
 </head>
@@ -305,7 +305,7 @@
   <!-- FLOATING BACK-TO-TOP BUTTON -->
   <button class="back-to-top-btn" onclick="scrollToTop()" title="Back to Top">▲</button>
 
-<footer>
+  <footer>
     <img src="clublogo.png" alt="Sanmina Plant 2 Pickleball Club Logo" class="footer-club-logo">
     <span>© 2026 Sanmina Plant 2 Pickleball Club. All Rights Reserved.</span>
   </footer>
@@ -395,14 +395,12 @@
                 ${m.winner ? `<strong style="color:#16a34a; margin-left:10px;">(Winner: ${m.winner})</strong>` : ''}
               </span>
               <div>
-                ${(m.status === 'UPCOMING' || m.status === 'READY') ? `
-                  <select id="assign-court-${m.id}">
-                    <option value="4">Court 4</option>
-                    <option value="5">Court 5</option>
-                    <option value="6">Court 6</option>
-                  </select>
-                  <button onclick="assignMatch(${m.id})">Send to Court</button>
-                ` : `<em style="color: #94a3b8; font-size: 13px;">Status: ${m.status}</em>`}
+                <select id="assign-court-${m.id}">
+                  <option value="4">Court 4</option>
+                  <option value="5">Court 5</option>
+                  <option value="6">Court 6</option>
+                </select>
+                <button onclick="assignMatch(${m.id})">Send to Court</button>
               </div>
             </div>`;
         });
@@ -436,10 +434,14 @@
       });
       document.getElementById('standingsContainer').innerHTML = standingsHtml;
 
-      // Render Upcoming Queue
+      // Render Upcoming Queue with Group-Based Default Court Assignment
       const upcoming = tournament.schedule.filter(m => m.status === 'UPCOMING');
       let scheduleHtml = upcoming.length === 0 ? '<p style="padding: 15px; color: #64748b; margin:0;">No upcoming group matches left!</p>' : '';
       upcoming.forEach((m, index) => {
+        let defaultCourt = 4;
+        if (m.group === 'B') defaultCourt = 5;
+        if (m.group === 'C') defaultCourt = 6;
+
         scheduleHtml += `
           <div class="match-item">
             <span>
@@ -448,9 +450,9 @@
             </span>
             <div>
               <select id="assign-court-${m.id}">
-                <option value="4">Court 4</option>
-                <option value="5">Court 5</option>
-                <option value="6">Court 6</option>
+                <option value="4" ${defaultCourt === 4 ? 'selected' : ''}>Court 4</option>
+                <option value="5" ${defaultCourt === 5 ? 'selected' : ''}>Court 5</option>
+                <option value="6" ${defaultCourt === 6 ? 'selected' : ''}>Court 6</option>
               </select>
               <button onclick="assignMatch(${m.id})">Send to Court</button>
             </div>
