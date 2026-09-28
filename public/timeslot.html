@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Match Schedule - Pickleball Tournament</title>
+  <style>
+    :root {
+      --primary-red: #e1251b;
+      --dark-slate: #0f172a;
+      --light-bg: #f8fafc;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      margin: 0;
+      padding: 16px;
+      background: #f1f5f9;
+      color: #334155;
+    }
+
+    .header {
+      text-align: center;
+      background: white;
+      padding: 16px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      margin-bottom: 20px;
+    }
+
+    .header img {
+      height: 50px;
+      object-fit: contain;
+      margin-bottom: 8px;
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: 20px;
+      color: var(--dark-slate);
+    }
+
+    .header p {
+      margin: 4px 0 0 0;
+      font-size: 13px;
+      color: #64748b;
+    }
+
+    .table-card {
+      background: white;
+      border-radius: 12px;
+      padding: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 600px;
+    }
+
+    th, td {
+      border: 1px solid #e2e8f0;
+      padding: 10px 12px;
+      text-align: center;
+      font-size: 13px;
+      vertical-align: middle;
+    }
+
+    th {
+      background: var(--dark-slate);
+      color: white;
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    th span {
+      display: block;
+      font-size: 11px;
+      font-weight: 400;
+      color: #94a3b8;
+    }
+
+    .time-col {
+      background: #f8fafc;
+      font-weight: 700;
+      color: var(--primary-red);
+      font-family: monospace;
+      font-size: 14px;
+      width: 80px;
+    }
+
+    .match-cell {
+      white-space: pre-line;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .match-cell .vs {
+      color: var(--primary-red);
+      font-weight: 700;
+      font-size: 11px;
+      margin: 2px 0;
+      display: block;
+    }
+
+    .empty-cell {
+      color: #cbd5e1;
+      font-style: italic;
+    }
+
+    footer {
+      text-align: center;
+      font-size: 12px;
+      color: #64748b;
+      margin-top: 30px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <img src="logo.png" alt="Sanmina Logo">
+    <h1>Match Schedule & Timetable</h1>
+    <p>Live schedule updates automatically</p>
+  </div>
+
+  <div class="table-card">
+    <div id="gridContainer">Loading schedule...</div>
+  </div>
+
+  <footer>
+    © 2026 Sanmina Plant 2 Pickleball Club
+  </footer>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+
+    function formatTime(totalMinutesFromStart) {
+      const startHour = 9; // Starts at 9:00 AM
+      const totalMinutes = (startHour * 60) + totalMinutesFromStart;
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+      const formattedMin = minutes < 10 ? `0${minutes}` : minutes;
+      const period = hours >= 12 ? 'PM' : 'AM';
+      const displayHours = hours % 12 === 0 ? 12 : hours % 12;
+      return `${displayHours < 10 ? '0' + displayHours : displayHours}:${formattedMin}`;
+    }
+
+    socket.on('initData', renderGrid);
+    socket.on('stateUpdated', renderGrid);
+
+    function renderGrid(data) {
+      if (!data || !data.tournament || !data.tournament.schedule) {
+        document.getElementById('gridContainer').innerHTML = '<p style="text-align:center;">No active schedule available.</p>';
+        return;
+      }
+
+      const schedule = data.tournament.schedule;
+      const groupCourtMap = { 'A': 'Court 4', 'B': 'Court 5', 'C': 'Court 6', 'D': 'Court 4', 'E': 'Court 5', 'F': 'Court 6' };
+      
+      const activeGroups = [...new Set(schedule.map(m => m.group))].sort();
+      const timeSlotMap = {};
+      const groupCounters = {};
+
+      schedule.forEach(m => {
+        if (!groupCounters[m.group]) groupCounters[m.group] = 0;
+        const timeStr = formatTime(groupCounters[m.group] * 15);
+        groupCounters[m.group]++;
+
+        if (!timeSlotMap[timeStr]) timeSlotMap[timeStr] = {};
+        
+        const teamA = (m.teamA || '').replace(/\n/g, ' / ');
+        const teamB = (m.teamB || '').replace(/\n/g, ' / ');
+        timeSlotMap[timeStr][m.group] = { teamA, teamB, status: m.status };
+      });
+
+      let html = '<table><thead><tr><th>Time</th>';
+      activeGroups.forEach(g => {
+        html += `<th>Group ${g} <span>(${groupCourtMap[g] || 'Court 4'})</span></th>`;
+      });
+      html += '</tr></thead><tbody>';
+
+      Object.keys(timeSlotMap).forEach(time => {
+        html += `<tr><td class="time-col">${time}</td>`;
+        activeGroups.forEach(g => {
+          const item = timeSlotMap[time][g];
+          if (item) {
+            html += `<td class="match-cell">
+              <strong>${item.teamA}</strong>
+              <span class="vs">VS</span>
+              <strong>${item.teamB}</strong>
+            </td>`;
+          } else {
+            html += `<td class="empty-cell">-</td>`;
+          }
+        });
+        html += '</tr>';
+      });
+
+      html += '</tbody></table>';
+      document.getElementById('gridContainer').innerHTML = html;
+    }
+  </script>
+</body>
+</html>
