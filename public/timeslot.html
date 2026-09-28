@@ -51,28 +51,40 @@
       border-radius: 12px;
       padding: 12px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-      overflow-x: auto;
+      max-height: 75vh;
+      overflow: auto; /* Enables smooth scrolling with sticky headers */
     }
 
     table {
       width: 100%;
-      border-collapse: collapse;
+      border-collapse: separate; /* Required for clean border rendering with sticky headers */
+      border-spacing: 0;
       min-width: 600px;
     }
 
     th, td {
-      border: 1px solid #e2e8f0;
+      border-bottom: 1px solid #e2e8f0;
+      border-right: 1px solid #e2e8f0;
       padding: 10px 12px;
       text-align: center;
       font-size: 13px;
       vertical-align: middle;
     }
 
+    th:first-child, td:first-child {
+      border-left: 1px solid #e2e8f0;
+    }
+
+    /* Sticky Header CSS */
     th {
+      position: sticky;
+      top: 0;
+      z-index: 10;
       background: var(--dark-slate);
       color: white;
       font-weight: 700;
       font-size: 13px;
+      border-top: 1px solid var(--dark-slate);
     }
 
     th span {
@@ -149,6 +161,16 @@
       return `${displayHours < 10 ? '0' + displayHours : displayHours}:${formattedMin}`;
     }
 
+    // Helper to format pair names replacing /, //, or line breaks with &
+    function formatPairName(rawName) {
+      if (!rawName) return '';
+      return rawName
+        .split(/[\/\n]+/)                // Split by slashes or newlines
+        .map(part => part.trim())        // Trim extra whitespace
+        .filter(part => part.length > 0) // Remove empty parts
+        .join(' & ');                   // Join with clean & symbol
+    }
+
     socket.on('initData', renderGrid);
     socket.on('stateUpdated', renderGrid);
 
@@ -172,8 +194,8 @@
 
         if (!timeSlotMap[timeStr]) timeSlotMap[timeStr] = {};
         
-        const teamA = (m.teamA || '').replace(/\n/g, ' / ');
-        const teamB = (m.teamB || '').replace(/\n/g, ' / ');
+        const teamA = formatPairName(m.teamA);
+        const teamB = formatPairName(m.teamB);
         timeSlotMap[timeStr][m.group] = { teamA, teamB, status: m.status };
       });
 
