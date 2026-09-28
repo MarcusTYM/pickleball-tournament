@@ -49,15 +49,16 @@
     .table-card {
       background: white;
       border-radius: 12px;
-      padding: 12px;
+      padding: 0;
       box-shadow: 0 2px 8px rgba(0,0,0,0.06);
       max-height: 75vh;
-      overflow: auto; /* Enables smooth scrolling with sticky headers */
+      overflow: auto;
+      border: 1px solid #e2e8f0;
     }
 
     table {
       width: 100%;
-      border-collapse: separate; /* Required for clean border rendering with sticky headers */
+      border-collapse: separate;
       border-spacing: 0;
       min-width: 600px;
     }
@@ -71,20 +72,20 @@
       vertical-align: middle;
     }
 
-    th:first-child, td:first-child {
-      border-left: 1px solid #e2e8f0;
+    th:last-child, td:last-child {
+      border-right: none;
     }
 
-    /* Sticky Header CSS */
+    /* Fixed Sticky Header Styles */
     th {
       position: sticky;
       top: 0;
       z-index: 10;
-      background: var(--dark-slate);
+      background-color: #0f172a !important;
       color: white;
       font-weight: 700;
       font-size: 13px;
-      border-top: 1px solid var(--dark-slate);
+      box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.4);
     }
 
     th span {
@@ -107,6 +108,7 @@
       white-space: pre-line;
       font-size: 12px;
       line-height: 1.4;
+      background: white;
     }
 
     .match-cell .vs {
@@ -120,6 +122,7 @@
     .empty-cell {
       color: #cbd5e1;
       font-style: italic;
+      background: white;
     }
 
     footer {
@@ -156,7 +159,6 @@
       const hours = Math.floor(totalMinutes / 60);
       const minutes = totalMinutes % 60;
       const formattedMin = minutes < 10 ? `0${minutes}` : minutes;
-      const period = hours >= 12 ? 'PM' : 'AM';
       const displayHours = hours % 12 === 0 ? 12 : hours % 12;
       return `${displayHours < 10 ? '0' + displayHours : displayHours}:${formattedMin}`;
     }
@@ -176,7 +178,7 @@
 
     function renderGrid(data) {
       if (!data || !data.tournament || !data.tournament.schedule) {
-        document.getElementById('gridContainer').innerHTML = '<p style="text-align:center;">No active schedule available.</p>';
+        document.getElementById('gridContainer').innerHTML = '<p style="text-align:center; padding: 20px;">No active schedule available.</p>';
         return;
       }
 
