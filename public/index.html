@@ -162,7 +162,15 @@
     }
     .match-item:nth-child(even) { background-color: #f8fafc; }
     .match-item:nth-child(odd) { background-color: #ffffff; }
-    .match-item:hover { background-color: #fecdd3 !important; }
+    
+    /* Dynamic Group Hover Colors */
+    .group-A-item:hover { background-color: #fecdd3 !important; } /* Soft Red */
+    .group-B-item:hover { background-color: #bae6fd !important; } /* Soft Blue */
+    .group-C-item:hover { background-color: #bbf7d0 !important; } /* Soft Green */
+    .group-D-item:hover { background-color: #fde68a !important; } /* Soft Amber */
+    .group-E-item:hover { background-color: #e9d5ff !important; } /* Soft Purple */
+    .group-F-item:hover { background-color: #99f6e4 !important; } /* Soft Teal */
+
     .match-item:last-child { border-bottom: none; }
 
     button { background: var(--primary-red); color: white; border: none; padding: 7px 14px; border-radius: 5px; cursor: pointer; font-weight: 600; font-size: 13px; }
@@ -392,7 +400,7 @@
         let koHtml = '';
         tournament.knockout.matches.forEach(m => {
           koHtml += `
-            <div class="match-item">
+            <div class="match-item group-A-item">
               <span>
                 <strong style="color:var(--primary-red);">${m.label}:</strong> 
                 <span class="multiline-name">${m.teamA}</span> vs <span class="multiline-name">${m.teamB}</span>
@@ -440,7 +448,7 @@
       });
       document.getElementById('standingsContainer').innerHTML = standingsHtml;
 
-      // Render Upcoming Queue with Group-Based Default Court Assignment
+      // Render Upcoming Queue with Group-Based Default Court Assignment and Group Hover Classes
       const upcoming = tournament.schedule.filter(m => m.status === 'UPCOMING');
       let scheduleHtml = upcoming.length === 0 ? '<p style="padding: 15px; color: #64748b; margin:0;">No upcoming group matches left!</p>' : '';
       upcoming.forEach((m, index) => {
@@ -449,7 +457,7 @@
         if (m.group === 'C') defaultCourt = 6;
 
         scheduleHtml += `
-          <div class="match-item">
+          <div class="match-item group-${m.group}-item">
             <span>
               <strong style="color: var(--dark-slate);">#${index + 1} [Group ${m.group}]</strong> 
               <span class="multiline-name" style="margin-left: 8px;">${m.teamA}</span> <span style="color:#94a3b8;">vs</span> <span class="multiline-name">${m.teamB}</span>
