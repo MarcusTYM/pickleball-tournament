@@ -166,12 +166,24 @@
     /* Dynamic Group Hover Colors */
     .group-A-item:hover { background-color: #fecdd3 !important; } /* Soft Red */
     .group-B-item:hover { background-color: #bae6fd !important; } /* Soft Blue */
-    .group-C-item:hover { background-color: #fde68a !important; } /* Soft Green #bbf7d0 */
+    .group-C-item:hover { background-color: #fde68a !important; } /* Soft Yellow */
     .group-D-item:hover { background-color: #fde68a !important; } /* Soft Amber */
     .group-E-item:hover { background-color: #e9d5ff !important; } /* Soft Purple */
     .group-F-item:hover { background-color: #99f6e4 !important; } /* Soft Teal */
 
     .match-item:last-child { border-bottom: none; }
+
+    .time-badge {
+      display: inline-block;
+      background: #e2e8f0;
+      color: #334155;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      margin-left: 8px;
+      font-family: monospace;
+    }
 
     button { background: var(--primary-red); color: white; border: none; padding: 7px 14px; border-radius: 5px; cursor: pointer; font-weight: 600; font-size: 13px; }
     button:hover { background: var(--hover-red); }
@@ -298,7 +310,10 @@
     <h2 id="sec-standings" class="scroll-target">📊 Group Standings & Edit Teams</h2>
     <div class="tables-container" id="standingsContainer"></div>
 
-    <h2 id="sec-queue" class="scroll-target">📋 Upcoming Round-Robin Queue</h2>
+    <h2 id="sec-queue" class="scroll-target" style="justify-content: space-between; padding-right: 10px;">
+      <span>📋 Upcoming Round-Robin Queue</span>
+      <button onclick="exportScheduleCSV()" style="background: #0284c7; font-size: 12px;">📥 Export Schedule (CSV)</button>
+    </h2>
     <div class="card" id="scheduleContainer"></div>
 
     <h2 id="sec-audit-log" class="scroll-target" style="justify-content: space-between; padding-right: 10px;">
@@ -322,6 +337,7 @@
   <script>
     const socket = io();
     let currentAuditLog = [];
+    let currentScheduleWithTimes = [];
 
     function scrollToSection(id) {
       const el = document.getElementById(id);
@@ -332,6 +348,17 @@
 
     function scrollToTop() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function formatTime(totalMinutesFromStart) {
+      const startHour = 9; // Starts at 9:00 AM
+      const totalMinutes = (startHour * 60) + totalMinutesFromStart;
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+      const formattedMin = minutes < 10 ? `0${minutes}` : minutes;
+      const period = hours >= 12 ? 'PM' : 'AM';
+      const displayHours = hours % 12 === 0 ? 12 : hours % 12;
+      return `${displayHours < 10 ? '0' + displayHours : displayHours}:${formattedMin} ${period}`;
     }
 
     socket.on('initData', renderAll);
@@ -448,18 +475,40 @@
       });
       document.getElementById('standingsContainer').innerHTML = standingsHtml;
 
-      // Render Upcoming Queue with Group-Based Default Court Assignment and Group Hover Classes
+      // Calculate 15-minute start time slots independently for each group
+      const groupMatchCounters = {};
+      currentScheduleWithTimes = [];
+
       const upcoming = tournament.schedule.filter(m => m.status === 'UPCOMING');
       let scheduleHtml = upcoming.length === 0 ? '<p style="padding: 15px; color: #64748b; margin:0;">No upcoming group matches left!</p>' : '';
+      
       upcoming.forEach((m, index) => {
+        if (!groupMatchCounters[m.group]) {
+          groupMatchCounters[m.group] = 0;
+        }
+
+        const minutesOffset = groupMatchCounters[m.group] * 15; // 15 mins per match slot
+        const timeSlotStr = formatTime(minutesOffset);
+        groupMatchCounters[m.group]++;
+
         let defaultCourt = 4;
         if (m.group === 'B') defaultCourt = 5;
         if (m.group === 'C') defaultCourt = 6;
 
+        currentScheduleWithTimes.push({
+          index: index + 1,
+          group: m.group,
+          timeSlot: timeSlotStr,
+          defaultCourt,
+          teamA: m.teamA,
+          teamB: m.teamB
+        });
+
         scheduleHtml += `
           <div class="match-item group-${m.group}-item">
             <span>
-              <strong style="color: var(--dark-slate);">#${index + 1} [Group ${m.group}]</strong> 
+              <strong style="color: var(--dark-slate);">#${index + 1} [Group ${m.group}]</strong>
+              <span class="time-badge">⏰ ${timeSlotStr}</span>
               <span class="multiline-name" style="margin-left: 8px;">${m.teamA}</span> <span style="color:#94a3b8;">vs</span> <span class="multiline-name">${m.teamB}</span>
             </span>
             <div>
@@ -521,6 +570,38 @@
       if (confirm("⚠️ CRITICAL WARNING: Are you sure you want to RESET EVERYTHING?\n\nThis will return to the setup screen!")) {
         socket.emit('resetTournament');
       }
+    }
+
+    function exportScheduleCSV() {
+      if (!currentScheduleWithTimes || currentScheduleWithTimes.length === 0) {
+        alert("No upcoming schedule available to export.");
+        return;
+      }
+
+      let csvContent = "Match #,Group,Estimated Time,Assigned Court,Team A,Team B\n";
+
+      currentScheduleWithTimes.forEach(item => {
+        const index = `"#${item.index}"`;
+        const group = `"Group ${item.group}"`;
+        const timeSlot = `"${item.timeSlot}"`;
+        const court = `"Court ${item.defaultCourt}"`;
+        const teamA = `"${(item.teamA || '').replace(/\n/g, ' / ').replace(/"/g, '""')}"`;
+        const teamB = `"${(item.teamB || '').replace(/\n/g, ' / ').replace(/"/g, '""')}"`;
+
+        csvContent += `${index},${group},${timeSlot},${court},${teamA},${teamB}\n`;
+      });
+
+      const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `tournament_match_schedule_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
     }
 
     function exportAuditLogCSV() {
