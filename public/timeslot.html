@@ -105,18 +105,23 @@
     }
 
     .match-cell {
-      white-space: pre-line;
       font-size: 12px;
-      line-height: 1.4;
+      line-height: 1.5;
       background: white;
+    }
+
+    .match-cell strong {
+      display: block;
+      font-weight: 600;
     }
 
     .match-cell .vs {
       color: var(--primary-red);
-      font-weight: 700;
+      font-weight: 800;
       font-size: 11px;
-      margin: 2px 0;
+      margin: 4px 0;
       display: block;
+      letter-spacing: 1px;
     }
 
     .empty-cell {
@@ -163,14 +168,14 @@
       return `${displayHours < 10 ? '0' + displayHours : displayHours}:${formattedMin}`;
     }
 
-    // Helper to format pair names replacing /, //, or line breaks with &
-    function formatPairName(rawName) {
+    // Helper to format pair names stacking each player on a new line
+    function formatPairNameStacked(rawName) {
       if (!rawName) return '';
       return rawName
-        .split(/[\/\n]+/)                // Split by slashes or newlines
+        .split(/[\/&\n]+/)               // Split by slashes, ampersands, or newlines
         .map(part => part.trim())        // Trim extra whitespace
         .filter(part => part.length > 0) // Remove empty parts
-        .join(' & ');                   // Join with clean & symbol
+        .join('<br>');                  // Stack each player on a new line
     }
 
     socket.on('initData', renderGrid);
@@ -196,8 +201,8 @@
 
         if (!timeSlotMap[timeStr]) timeSlotMap[timeStr] = {};
         
-        const teamA = formatPairName(m.teamA);
-        const teamB = formatPairName(m.teamB);
+        const teamA = formatPairNameStacked(m.teamA);
+        const teamB = formatPairNameStacked(m.teamB);
         timeSlotMap[timeStr][m.group] = { teamA, teamB, status: m.status };
       });
 
@@ -214,7 +219,7 @@
           if (item) {
             html += `<td class="match-cell">
               <strong>${item.teamA}</strong>
-              <span class="vs">VS</span>
+              <span class="vs">-VS-</span>
               <strong>${item.teamB}</strong>
             </td>`;
           } else {
