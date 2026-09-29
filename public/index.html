@@ -155,7 +155,7 @@
     .match-item {
       display: flex;
       justify-content: space-between;
-      align-items: center; /* Ensures vertical alignment for elements inside */
+      align-items: center;
       padding: 10px 16px;
       border-bottom: 1px solid #f1f5f9;
       transition: background-color 0.15s ease-in-out;
@@ -493,31 +493,42 @@
       });
       document.getElementById('standingsContainer').innerHTML = standingsHtml;
 
-      // Calculate 12-minute start time slots independently for each group
+      // Render Upcoming Round-Robin Queue
       const groupMatchCounters = {};
+      const globalMatchNumbers = {};
       currentScheduleWithTimes = [];
 
-      const upcoming = tournament.schedule.filter(m => m.status === 'UPCOMING');
-      let scheduleHtml = upcoming.length === 0 ? '<p style="padding: 15px; color: #64748b; margin:0;">No upcoming group matches left!</p>' : '';
-      
-      upcoming.forEach((m, index) => {
+      // Step 1: Pre-calculate fixed global match index & time slots for ALL matches in full schedule
+      tournament.schedule.forEach((m, index) => {
         if (!groupMatchCounters[m.group]) {
           groupMatchCounters[m.group] = 0;
         }
 
-        // Reduced match time interval from 15 mins to 12 mins
-        const minutesOffset = groupMatchCounters[m.group] * 12;
+        const minutesOffset = groupMatchCounters[m.group] * 12; // 12-minute interval
         const timeSlotStr = formatTime(minutesOffset);
         groupMatchCounters[m.group]++;
+
+        globalMatchNumbers[m.id] = {
+          globalNum: index + 1,
+          timeSlot: timeSlotStr
+        };
+      });
+
+      // Step 2: Render ONLY UPCOMING matches with their permanent match # and scheduled time slot
+      const upcoming = tournament.schedule.filter(m => m.status === 'UPCOMING');
+      let scheduleHtml = upcoming.length === 0 ? '<p style="padding: 15px; color: #64748b; margin:0;">No upcoming group matches left!</p>' : '';
+
+      upcoming.forEach((m) => {
+        const { globalNum, timeSlot } = globalMatchNumbers[m.id];
 
         let defaultCourt = 4;
         if (m.group === 'B') defaultCourt = 5;
         if (m.group === 'C') defaultCourt = 6;
 
         currentScheduleWithTimes.push({
-          index: index + 1,
+          index: globalNum,
           group: m.group,
-          timeSlot: timeSlotStr,
+          timeSlot: timeSlot,
           defaultCourt,
           teamA: m.teamA,
           teamB: m.teamB
@@ -526,8 +537,8 @@
         scheduleHtml += `
           <div class="match-item group-${m.group}-item">
             <span style="display: flex; align-items: center; flex-wrap: wrap;">
-              <strong style="color: var(--dark-slate); vertical-align: middle;">#${index + 1} [Group ${m.group}]</strong>
-              <span class="time-badge">⏰ ${timeSlotStr}</span>
+              <strong style="color: var(--dark-slate); vertical-align: middle;">#${globalNum} [Group ${m.group}]</strong>
+              <span class="time-badge">⏰ ${timeSlot}</span>
               <span class="multiline-name">${m.teamA}</span> 
               <span class="match-vs">vs</span> 
               <span class="multiline-name">${m.teamB}</span>
