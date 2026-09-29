@@ -8,11 +8,10 @@
     :root {
       --primary-red: #c0392b;       /* Muted corporate red */
       --soft-slate: #2b374e;        /* Soft navy slate */
-      --light-bg-1: #ffffff;
-      --light-bg-2: #f8fafc;        /* Soft cool gray */
-      --light-bg-3: #f1f5f9;        /* Slightly darker tint for alternating */
-      --border-color: #e2e8f0;
-      --text-main: #334155;
+      --light-bg-1: #ffffff;        /* White background */
+      --light-bg-2: #e2e8f0;        /* Slightly darker slate tint for clear visual contrast */
+      --border-color: #cbd5e1;      /* Crisp border tint */
+      --text-main: #1e293b;
       --text-muted: #64748b;
     }
 
@@ -79,7 +78,7 @@
       border-bottom: 1px solid var(--border-color);
       border-right: 1px solid var(--border-color);
       padding: 12px 14px;
-      text-align: center; /* Center-aligned everywhere */
+      text-align: center;
       font-size: 13px;
       vertical-align: middle;
     }
@@ -88,7 +87,7 @@
       border-right: none;
     }
 
-    /* Soft Fixed Sticky Header */
+    /* Fixed Sticky Header */
     th {
       position: sticky;
       top: 0;
@@ -97,7 +96,7 @@
       color: white;
       font-weight: 600;
       font-size: 13px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
       letter-spacing: 0.3px;
     }
 
@@ -110,7 +109,7 @@
     }
 
     .time-col {
-      background: #f1f5f9;
+      background: #e2e8f0;
       font-weight: 700;
       color: var(--primary-red);
       font-family: monospace;
@@ -127,7 +126,7 @@
     .match-cell strong {
       display: block;
       font-weight: 600;
-      color: #1e293b;
+      color: #0f172a;
     }
 
     .match-cell .vs {
@@ -140,12 +139,12 @@
     }
 
     .empty-cell {
-      color: #cbd5e1;
+      color: #94a3b8;
       font-style: italic;
       text-align: center;
     }
 
-    /* Alternating Court Columns Pattern (Desktop) */
+    /* Alternating Court Columns (Desktop View) */
     tbody tr td:nth-child(2) { background-color: var(--light-bg-1); }
     tbody tr td:nth-child(3) { background-color: var(--light-bg-2); }
     tbody tr td:nth-child(4) { background-color: var(--light-bg-1); }
@@ -178,13 +177,13 @@
       tbody tr {
         margin-bottom: 18px;
         border-radius: 12px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        box-shadow: 0 2px 10px rgba(0,0,0,0.08);
         overflow: hidden;
-        border: 1px solid #cbd5e1;
+        border: 1px solid var(--border-color);
         background: #ffffff;
       }
 
-      /* Mobile Time Slot Bar */
+      /* Mobile Time Slot Header Bar */
       td.time-col {
         width: 100%;
         background-color: var(--soft-slate) !important;
@@ -193,13 +192,13 @@
         padding: 8px 12px;
         text-align: center;
         border: none;
-        border-bottom: 1px solid #cbd5e1;
+        border-bottom: 1px solid var(--border-color);
       }
 
       /* Mobile Group Match Cells */
       td.match-cell, td.empty-cell {
-        padding: 12px;
-        text-align: center; /* Center player names on mobile */
+        padding: 14px 12px;
+        text-align: center;
         border: none;
         border-bottom: 1px solid var(--border-color);
       }
@@ -208,18 +207,18 @@
         border-bottom: none;
       }
 
-      /* Alternating Inner Background Pattern for Courts on Mobile */
-      td.match-cell:nth-of-type(even), 
-      td.empty-cell:nth-of-type(even) {
-        background-color: var(--light-bg-2) !important;
-      }
-
+      /* Darker Alternating Inner Cell Pattern on Mobile */
       td.match-cell:nth-of-type(odd), 
       td.empty-cell:nth-of-type(odd) {
         background-color: var(--light-bg-1) !important;
       }
 
-      /* Soft Centered Group Badge above Players */
+      td.match-cell:nth-of-type(even), 
+      td.empty-cell:nth-of-type(even) {
+        background-color: var(--light-bg-2) !important;
+      }
+
+      /* Centered Group Pill Badge above Players */
       td[data-label]::before {
         content: attr(data-label);
         white-space: pre-line;
@@ -228,8 +227,8 @@
         font-weight: 700;
         font-size: 11px;
         color: var(--soft-slate);
-        background: #e2e8f0;
-        padding: 3px 12px;
+        background: #cbd5e1;
+        padding: 4px 14px;
         border-radius: 12px;
         margin-bottom: 8px;
         text-transform: uppercase;
