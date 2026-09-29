@@ -155,7 +155,7 @@
     .match-item {
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      align-items: center; /* Ensures vertical alignment for elements inside */
       padding: 10px 16px;
       border-bottom: 1px solid #f1f5f9;
       transition: background-color 0.15s ease-in-out;
@@ -174,22 +174,40 @@
     .match-item:last-child { border-bottom: none; }
 
     .time-badge {
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
       background: #e2e8f0;
       color: #334155;
       font-size: 11px;
       font-weight: 700;
-      padding: 2px 7px;
+      padding: 3px 8px;
       border-radius: 4px;
       margin-left: 8px;
+      margin-right: 12px;
       font-family: monospace;
+      vertical-align: middle;
     }
 
     button { background: var(--primary-red); color: white; border: none; padding: 7px 14px; border-radius: 5px; cursor: pointer; font-weight: 600; font-size: 13px; }
     button:hover { background: var(--hover-red); }
     select, input { padding: 6px 10px; border: 1px solid var(--border-color); border-radius: 5px; font-size: 13px; }
     .team-edit-textarea { width: 110px; height: 38px; font-size: 12px; font-family: inherit; resize: vertical; border: 1px solid var(--border-color); border-radius: 4px; padding: 4px; }
-    .multiline-name { white-space: pre-line; display: inline-block; font-weight: 600; }
+    
+    .multiline-name { 
+      white-space: pre-line; 
+      display: inline-block; 
+      font-weight: 600; 
+      vertical-align: middle; 
+    }
+
+    .match-vs {
+      color: #94a3b8;
+      font-size: 12px;
+      margin: 0 6px;
+      vertical-align: middle;
+      display: inline-block;
+      font-weight: 600;
+    }
     
     .btn-green { background: #16a34a; font-size: 14px; padding: 8px 16px; }
     .btn-green:hover { background: #15803d; }
@@ -410,7 +428,7 @@
             </div>
             <div style="text-align: center; margin: 8px 0;">
               <span class="multiline-name">${c.teamA}</span> 
-              <span style="color: #94a3b8; font-size: 12px; margin: 0 4px;">VS</span> 
+              <span style="color: #94a3b8; font-size: 12px; margin: 0 4px; vertical-align: middle;">VS</span> 
               <span class="multiline-name">${c.teamB}</span>
             </div>
             <div class="score-display" id="c${i}-score">${c.scoreA} - ${c.scoreB}</div>
@@ -428,9 +446,9 @@
         tournament.knockout.matches.forEach(m => {
           koHtml += `
             <div class="match-item group-A-item">
-              <span>
+              <span style="display: flex; align-items: center; flex-wrap: wrap; gap: 4px;">
                 <strong style="color:var(--primary-red);">${m.label}:</strong> 
-                <span class="multiline-name">${m.teamA}</span> vs <span class="multiline-name">${m.teamB}</span>
+                <span class="multiline-name">${m.teamA}</span> <span class="match-vs">vs</span> <span class="multiline-name">${m.teamB}</span>
                 ${m.winner ? `<strong style="color:#16a34a; margin-left:10px;">(Winner: ${m.winner})</strong>` : ''}
               </span>
               <div>
@@ -475,7 +493,7 @@
       });
       document.getElementById('standingsContainer').innerHTML = standingsHtml;
 
-      // Calculate 15-minute start time slots independently for each group
+      // Calculate 12-minute start time slots independently for each group
       const groupMatchCounters = {};
       currentScheduleWithTimes = [];
 
@@ -487,7 +505,8 @@
           groupMatchCounters[m.group] = 0;
         }
 
-        const minutesOffset = groupMatchCounters[m.group] * 15; // 15 mins per match slot
+        // Reduced match time interval from 15 mins to 12 mins
+        const minutesOffset = groupMatchCounters[m.group] * 12;
         const timeSlotStr = formatTime(minutesOffset);
         groupMatchCounters[m.group]++;
 
@@ -506,10 +525,12 @@
 
         scheduleHtml += `
           <div class="match-item group-${m.group}-item">
-            <span>
-              <strong style="color: var(--dark-slate);">#${index + 1} [Group ${m.group}]</strong>
+            <span style="display: flex; align-items: center; flex-wrap: wrap;">
+              <strong style="color: var(--dark-slate); vertical-align: middle;">#${index + 1} [Group ${m.group}]</strong>
               <span class="time-badge">⏰ ${timeSlotStr}</span>
-              <span class="multiline-name" style="margin-left: 8px;">${m.teamA}</span> <span style="color:#94a3b8;">vs</span> <span class="multiline-name">${m.teamB}</span>
+              <span class="multiline-name">${m.teamA}</span> 
+              <span class="match-vs">vs</span> 
+              <span class="multiline-name">${m.teamB}</span>
             </span>
             <div>
               <select id="assign-court-${m.id}">
