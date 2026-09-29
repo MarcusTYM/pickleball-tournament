@@ -6,8 +6,9 @@
   <title>Match Schedule - Pickleball Tournament</title>
   <style>
     :root {
-      --primary-red: #e1251b;
-      --dark-slate: #0f172a;
+      --sanmina-red: #e1251b;
+      --sanmina-dark: #1e293b;
+      --sanmina-hover-red: #b91c1c;
       --light-bg: #f8fafc;
     }
 
@@ -41,7 +42,7 @@
     .header h1 {
       margin: 0;
       font-size: 20px;
-      color: var(--dark-slate);
+      color: var(--sanmina-dark);
     }
 
     .header p {
@@ -86,7 +87,7 @@
       position: sticky;
       top: 0;
       z-index: 10;
-      background-color: #0f172a !important;
+      background-color: var(--sanmina-dark) !important;
       color: white;
       font-weight: 700;
       font-size: 13px;
@@ -97,7 +98,7 @@
       display: block;
       font-size: 11px;
       font-weight: 400;
-      color: #94a3b8;
+      color: #cbd5e1;
     }
 
     /* Desktop Alternating Row Colors */
@@ -114,7 +115,7 @@
     .time-col {
       background: #f1f5f9;
       font-weight: 700;
-      color: var(--primary-red);
+      color: var(--sanmina-red);
       font-family: monospace;
       font-size: 14px;
       width: 85px;
@@ -131,7 +132,7 @@
     }
 
     .match-cell .vs {
-      color: var(--primary-red);
+      color: var(--sanmina-red);
       font-weight: 800;
       font-size: 11px;
       margin: 4px 0;
@@ -176,21 +177,21 @@
         border: 1px solid #cbd5e1;
       }
 
-      /* Mobile Alternating Card Styles */
+      /* Mobile Alternating Sanmina Card Styles */
       tbody tr:nth-child(odd) {
         background: #ffffff;
-        border-left: 6px solid #2563eb; /* Blue Accent */
+        border-left: 6px solid var(--sanmina-red); /* Sanmina Red Accent */
       }
 
       tbody tr:nth-child(even) {
         background: #f8fafc;
-        border-left: 6px solid #0f172a; /* Dark Slate Accent */
+        border-left: 6px solid var(--sanmina-dark); /* Sanmina Dark Slate Accent */
       }
 
       /* Mobile Time Slot Header */
       td.time-col {
         width: 100%;
-        background-color: #0f172a !important;
+        background-color: var(--sanmina-red) !important; /* Sanmina Red Header */
         color: #ffffff;
         font-size: 15px;
         padding: 8px 12px;
@@ -202,7 +203,7 @@
       /* Mobile Group Match Cells */
       td.match-cell, td.empty-cell {
         position: relative;
-        padding: 12px 12px 12px 110px; /* Space for the group label */
+        padding: 12px 12px 12px 115px; /* Space for group label */
         text-align: left;
         border: none;
         border-bottom: 1px solid #e2e8f0;
@@ -213,13 +214,14 @@
         border-bottom: none;
       }
 
-      /* Inject Group Label on the Left Side of Card */
+      /* Fixes literal <BR> tag issue by using white-space pre-line */
       td[data-label]::before {
         content: attr(data-label);
+        white-space: pre-line;
         position: absolute;
         left: 12px;
         top: 14px;
-        width: 90px;
+        width: 95px;
         font-weight: 700;
         font-size: 11px;
         color: #475569;
@@ -320,7 +322,9 @@
         activeGroups.forEach(g => {
           const item = timeSlotMap[time][g];
           const courtName = groupCourtMap[g] || 'Court 4';
-          const mobileLabel = `Group ${g}<br>(${courtName})`;
+          
+          // Replaced <br> with \n so CSS content: attr() displays proper line break
+          const mobileLabel = `GROUP ${g}\n(${courtName})`;
 
           if (item) {
             html += `<td class="match-cell" data-label="${mobileLabel}">
