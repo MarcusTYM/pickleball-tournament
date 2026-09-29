@@ -307,7 +307,7 @@
 
       schedule.forEach(m => {
         if (!groupCounters[m.group]) groupCounters[m.group] = 0;
-        const timeStr = formatTime(groupCounters[m.group] * 15);
+        const timeStr = formatTime(groupCounters[m.group] * 12);
         groupCounters[m.group]++;
 
         if (!timeSlotMap[timeStr]) timeSlotMap[timeStr] = {};
