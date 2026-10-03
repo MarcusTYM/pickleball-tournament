@@ -35,20 +35,23 @@
     }
 
 .brand-logo-card {
-  background: transparent;
-  padding: 0;
-  border-radius: 0;
+  background: #ffffff;
+  padding: 8px 18px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 .brand-logo {
-  height: 50px;
+  height: 68px; /* Increased size from 42px/50px */
+  width: auto;
   object-fit: contain;
-  /* Step 1: Invert white background to black so screen blend makes it 100% transparent */
-  filter: invert(1) hue-rotate(180deg);
-  /* Step 2: Blends black away into the dark blue background seamlessly */
-  mix-blend-mode: screen;
+  /* Sharpens image details and boosts red saturation */
+  filter: contrast(1.2) saturate(1.3) brightness(1.02);
+  image-rendering: -webkit-optimize-contrast;
 }
 
     h1 { color: #ffffff; font-size: clamp(20px, 4vw, 28px); margin: 0; font-weight: 800; letter-spacing: -0.5px; text-align: center; }
