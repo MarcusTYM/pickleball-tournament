@@ -36,13 +36,18 @@
 .brand-logo-card {
   background: transparent;
   padding: 0;
+  border-radius: 0;
+  display: flex;
+  align-items: center;
 }
 
 .brand-logo {
   height: 50px;
   object-fit: contain;
-  mix-blend-mode: screen; /* Blends pure white background away into dark blue */
-  filter: contrast(1.2);
+  /* Removes the solid white background dynamically */
+  mix-blend-mode: multiply;
+  /* Turns the black SANMINA text into crisp white to match dark mode */
+  filter: invert(1) brightness(2);
 }
     h1 { color: #ffffff; font-size: clamp(20px, 4vw, 28px); margin: 0; font-weight: 800; letter-spacing: -0.5px; text-align: center; }
     
