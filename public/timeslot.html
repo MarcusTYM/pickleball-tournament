@@ -23,7 +23,7 @@
       padding: 16px;
       background: #f1f5f9;
       color: var(--text-main);
-      padding-bottom: 80px; /* Leave room for floating button */
+      padding-bottom: 90px; /* Leave room for floating buttons */
     }
 
     .header {
@@ -187,11 +187,19 @@
       animation: highlightRow 1.2s ease-in-out;
     }
 
-    /* FLOATING ACTION BUTTON (FAB) */
-    .fab-jump {
+    /* FLOATING ACTION BUTTON CONTAINER */
+    .fab-container {
       position: fixed;
       bottom: 24px;
       right: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 10px;
+      z-index: 99;
+    }
+
+    .fab-btn {
       background: var(--soft-slate);
       color: white;
       border: none;
@@ -201,14 +209,27 @@
       font-weight: 800;
       cursor: pointer;
       box-shadow: 0 6px 18px rgba(15, 23, 42, 0.35);
-      z-index: 99;
       display: flex;
       align-items: center;
       gap: 6px;
-      transition: transform 0.2s ease;
+      transition: all 0.25s ease;
     }
 
-    .fab-jump:active { transform: scale(0.95); }
+    .fab-btn:active { transform: scale(0.95); }
+
+    /* BACK TO TOP BUTTON (Auto-hides at top) */
+    .fab-top {
+      background: #475569;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(10px);
+    }
+
+    .fab-top.visible {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
 
     /* JUMP DRAWER OVERLAY & SHEET */
     .drawer-overlay {
@@ -394,10 +415,15 @@
     <div id="gridContainer">Loading schedule...</div>
   </div>
 
-  <!-- FLOATING QUICK JUMP BUTTON -->
-  <button class="fab-jump" onclick="toggleDrawer(true)">
-    ⏰ Jump to Time
-  </button>
+  <!-- FLOATING ACTION BUTTONS -->
+  <div class="fab-container">
+    <button class="fab-btn fab-top" id="btnBackToTop" onclick="scrollToTop()">
+      ⬆ Back to Top
+    </button>
+    <button class="fab-btn" onclick="toggleDrawer(true)">
+      ⏰ Jump to Time
+    </button>
+  </div>
 
   <!-- JUMP DRAWER POPUP -->
   <div class="drawer-overlay" id="drawerOverlay" onclick="toggleDrawer(false)"></div>
@@ -418,6 +444,20 @@
     const socket = io();
     let currentScheduleData = null;
     let selectedGroupFilter = 'ALL';
+
+    // Show/Hide "Back to Top" button based on scroll position
+    window.addEventListener('scroll', () => {
+      const btnTop = document.getElementById('btnBackToTop');
+      if (window.scrollY > 250) {
+        btnTop.classList.add('visible');
+      } else {
+        btnTop.classList.remove('visible');
+      }
+    });
+
+    function scrollToTop() {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
 
     function formatTime(totalMinutesFromStart) {
       const startHour = 9; // Starts at 9:00 AM
