@@ -255,6 +255,20 @@
       box-shadow: 0 -10px 25px rgba(0,0,0,0.15);
     }
 
+    /* Desktop Drawer Width Optimization */
+    @media (min-width: 769px) {
+      .drawer-sheet {
+        max-width: 500px;
+        left: 50%;
+        transform: translate(-50%, 100%);
+        border-radius: 20px;
+        bottom: 20px;
+      }
+      .drawer-sheet.open {
+        transform: translate(-50%, 0);
+      }
+    }
+
     .drawer-sheet.open { transform: translateY(0); }
 
     .drawer-header {
@@ -411,7 +425,7 @@
     <button class="filter-pill active" onclick="filterGroup('ALL', this)">ALL GROUPS</button>
   </div>
 
-  <div class="table-card">
+  <div class="table-card" id="tableCard">
     <div id="gridContainer">Loading schedule...</div>
   </div>
 
@@ -445,18 +459,28 @@
     let currentScheduleData = null;
     let selectedGroupFilter = 'ALL';
 
-    // Show/Hide "Back to Top" button based on scroll position
-    window.addEventListener('scroll', () => {
+    // Check scroll position across BOTH window (mobile) and .table-card (desktop)
+    function handleScroll() {
       const btnTop = document.getElementById('btnBackToTop');
-      if (window.scrollY > 250) {
+      const tableCard = document.getElementById('tableCard');
+      const scrollPos = window.scrollY || (tableCard ? tableCard.scrollTop : 0);
+
+      if (scrollPos > 150) {
         btnTop.classList.add('visible');
       } else {
         btnTop.classList.remove('visible');
       }
-    });
+    }
+
+    // Capture scrolling on window and nested elements
+    window.addEventListener('scroll', handleScroll, true);
 
     function scrollToTop() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
+      const tableCard = document.getElementById('tableCard');
+      if (tableCard) {
+        tableCard.scrollTo({ top: 0, behavior: 'smooth' });
+      }
     }
 
     function formatTime(totalMinutesFromStart) {
