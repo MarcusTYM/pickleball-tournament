@@ -9,15 +9,13 @@
       --primary-red: #c0392b;       /* Muted corporate red */
       --soft-slate: #2b374e;        /* Soft navy slate */
       --light-bg-1: #ffffff;        /* White background */
-      --light-bg-2: #e2e8f0;        /* Slightly darker slate tint for clear visual contrast */
+      --light-bg-2: #e2e8f0;        /* Slate tint for visual contrast */
       --border-color: #cbd5e1;      /* Crisp border tint */
       --text-main: #1e293b;
       --text-muted: #64748b;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       font-family: system-ui, -apple-system, sans-serif;
@@ -25,6 +23,7 @@
       padding: 16px;
       background: #f1f5f9;
       color: var(--text-main);
+      padding-bottom: 80px; /* Leave room for floating button */
     }
 
     .header {
@@ -33,7 +32,7 @@
       padding: 18px;
       border-radius: 12px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-      margin-bottom: 20px;
+      margin-bottom: 14px;
       border: 1px solid var(--border-color);
     }
 
@@ -54,6 +53,37 @@
       margin: 4px 0 0 0;
       font-size: 13px;
       color: var(--text-muted);
+    }
+
+    /* TOP GROUP FILTER BAR */
+    .filter-bar {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding: 4px 2px 10px 2px;
+      margin-bottom: 10px;
+      scrollbar-width: none; /* Hide scrollbar Firefox */
+    }
+    .filter-bar::-webkit-scrollbar { display: none; } /* Hide scrollbar Chrome/Safari */
+
+    .filter-pill {
+      background: #ffffff;
+      border: 1.5px solid var(--border-color);
+      color: var(--soft-slate);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .filter-pill.active {
+      background: var(--soft-slate);
+      color: #ffffff;
+      border-color: var(--soft-slate);
     }
 
     .table-card {
@@ -83,11 +113,8 @@
       vertical-align: middle;
     }
 
-    th:last-child, td:last-child {
-      border-right: none;
-    }
+    th:last-child, td:last-child { border-right: none; }
 
-    /* Fixed Sticky Header */
     th {
       position: sticky;
       top: 0;
@@ -144,11 +171,124 @@
       text-align: center;
     }
 
-    /* Alternating Court Columns (Desktop View) */
+    /* Alternating Court Columns (Desktop) */
     tbody tr td:nth-child(2) { background-color: var(--light-bg-1); }
     tbody tr td:nth-child(3) { background-color: var(--light-bg-2); }
     tbody tr td:nth-child(4) { background-color: var(--light-bg-1); }
     tbody tr td:nth-child(5) { background-color: var(--light-bg-2); }
+
+    /* Highlight pulse animation for jumped row */
+    @keyframes highlightRow {
+      0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(192, 57, 43, 0.4); }
+      50% { transform: scale(1.02); box-shadow: 0 0 15px 4px rgba(192, 57, 43, 0.3); }
+      100% { transform: scale(1); box-shadow: none; }
+    }
+    .jump-highlight {
+      animation: highlightRow 1.2s ease-in-out;
+    }
+
+    /* FLOATING ACTION BUTTON (FAB) */
+    .fab-jump {
+      position: fixed;
+      bottom: 24px;
+      right: 20px;
+      background: var(--soft-slate);
+      color: white;
+      border: none;
+      padding: 12px 18px;
+      border-radius: 30px;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.35);
+      z-index: 99;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: transform 0.2s ease;
+    }
+
+    .fab-jump:active { transform: scale(0.95); }
+
+    /* JUMP DRAWER OVERLAY & SHEET */
+    .drawer-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 23, 42, 0.5);
+      backdrop-filter: blur(3px);
+      z-index: 200;
+    }
+
+    .drawer-sheet {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: #ffffff;
+      border-radius: 20px 20px 0 0;
+      padding: 20px;
+      max-height: 65vh;
+      overflow-y: auto;
+      z-index: 201;
+      transform: translateY(100%);
+      transition: transform 0.25s ease-out;
+      box-shadow: 0 -10px 25px rgba(0,0,0,0.15);
+    }
+
+    .drawer-sheet.open { transform: translateY(0); }
+
+    .drawer-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .drawer-header h3 {
+      margin: 0;
+      font-size: 16px;
+      color: var(--soft-slate);
+      font-weight: 800;
+    }
+
+    .drawer-close {
+      background: #f1f5f9;
+      border: none;
+      font-size: 16px;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-weight: 700;
+      color: #64748b;
+    }
+
+    .time-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .time-btn {
+      background: #f8fafc;
+      border: 1.5px solid var(--border-color);
+      border-radius: 10px;
+      padding: 12px;
+      font-family: monospace;
+      font-weight: 800;
+      font-size: 14px;
+      color: var(--primary-red);
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s ease;
+    }
+
+    .time-btn:hover, .time-btn:active {
+      background: var(--soft-slate);
+      color: white;
+      border-color: var(--soft-slate);
+    }
 
     /* --- Mobile Responsive Layout (<= 768px) --- */
     @media (max-width: 768px) {
@@ -166,14 +306,12 @@
         min-width: 0 !important;
       }
 
-      /* Hide Desktop Header on Mobile */
       thead tr {
         position: absolute;
         top: -9999px;
         left: -9999px;
       }
 
-      /* Card Container for Each Time Slot */
       tbody tr {
         margin-bottom: 18px;
         border-radius: 12px;
@@ -181,9 +319,9 @@
         overflow: hidden;
         border: 1px solid var(--border-color);
         background: #ffffff;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
       }
 
-      /* Mobile Time Slot Header Bar */
       td.time-col {
         width: 100%;
         background-color: var(--soft-slate) !important;
@@ -195,7 +333,6 @@
         border-bottom: 1px solid var(--border-color);
       }
 
-      /* Mobile Group Match Cells */
       td.match-cell, td.empty-cell {
         padding: 14px 12px;
         text-align: center;
@@ -203,22 +340,16 @@
         border-bottom: 1px solid var(--border-color);
       }
 
-      td:last-child {
-        border-bottom: none;
-      }
+      td:last-child { border-bottom: none; }
 
-      /* Darker Alternating Inner Cell Pattern on Mobile */
-      td.match-cell:nth-of-type(odd), 
-      td.empty-cell:nth-of-type(odd) {
+      td.match-cell:nth-of-type(odd), td.empty-cell:nth-of-type(odd) {
         background-color: var(--light-bg-1) !important;
       }
 
-      td.match-cell:nth-of-type(even), 
-      td.empty-cell:nth-of-type(even) {
+      td.match-cell:nth-of-type(even), td.empty-cell:nth-of-type(even) {
         background-color: var(--light-bg-2) !important;
       }
 
-      /* Centered Group Pill Badge above Players */
       td[data-label]::before {
         content: attr(data-label);
         white-space: pre-line;
@@ -235,10 +366,7 @@
         letter-spacing: 0.5px;
       }
 
-      .match-cell .vs {
-        text-align: center;
-        margin: 4px 0;
-      }
+      .match-cell .vs { text-align: center; margin: 4px 0; }
     }
 
     footer {
@@ -257,8 +385,28 @@
     <p>Live schedule updates automatically</p>
   </div>
 
+  <!-- GROUP FILTER BAR -->
+  <div class="filter-bar" id="filterBar">
+    <button class="filter-pill active" onclick="filterGroup('ALL', this)">ALL GROUPS</button>
+  </div>
+
   <div class="table-card">
     <div id="gridContainer">Loading schedule...</div>
+  </div>
+
+  <!-- FLOATING QUICK JUMP BUTTON -->
+  <button class="fab-jump" onclick="toggleDrawer(true)">
+    ⏰ Jump to Time
+  </button>
+
+  <!-- JUMP DRAWER POPUP -->
+  <div class="drawer-overlay" id="drawerOverlay" onclick="toggleDrawer(false)"></div>
+  <div class="drawer-sheet" id="drawerSheet">
+    <div class="drawer-header">
+      <h3>Select Time Slot</h3>
+      <button class="drawer-close" onclick="toggleDrawer(false)">✕</button>
+    </div>
+    <div class="time-grid" id="timeGrid"></div>
   </div>
 
   <footer>
@@ -268,6 +416,8 @@
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
+    let currentScheduleData = null;
+    let selectedGroupFilter = 'ALL';
 
     function formatTime(totalMinutesFromStart) {
       const startHour = 9; // Starts at 9:00 AM
@@ -279,29 +429,37 @@
       return `${displayHours < 10 ? '0' + displayHours : displayHours}:${formattedMin}`;
     }
 
-    // Helper to format pair names stacking each player on a new line
     function formatPairNameStacked(rawName) {
       if (!rawName) return '';
       return rawName
-        .split(/[\/&\n]+/)               // Split by slashes, ampersands, or newlines
-        .map(part => part.trim())        // Trim extra whitespace
-        .filter(part => part.length > 0) // Remove empty parts
-        .join('<br>');                  // Stack each player on a new line
+        .split(/[\/&\n]+/)
+        .map(part => part.trim())
+        .filter(part => part.length > 0)
+        .join('<br>');
     }
 
-    socket.on('initData', renderGrid);
-    socket.on('stateUpdated', renderGrid);
+    socket.on('initData', data => { currentScheduleData = data; renderGrid(); });
+    socket.on('stateUpdated', data => { currentScheduleData = data; renderGrid(); });
 
-    function renderGrid(data) {
-      if (!data || !data.tournament || !data.tournament.schedule) {
+    function renderGrid() {
+      if (!currentScheduleData || !currentScheduleData.tournament || !currentScheduleData.tournament.schedule) {
         document.getElementById('gridContainer').innerHTML = '<p style="text-align:center; padding: 20px;">No active schedule available.</p>';
         return;
       }
 
-      const schedule = data.tournament.schedule;
+      const schedule = currentScheduleData.tournament.schedule;
       const groupCourtMap = { 'A': 'Court 4', 'B': 'Court 5', 'C': 'Court 6', 'D': 'Court 4', 'E': 'Court 5', 'F': 'Court 6' };
       
-      const activeGroups = [...new Set(schedule.map(m => m.group))].sort();
+      const allActiveGroups = [...new Set(schedule.map(m => m.group))].sort();
+      
+      // Update Filter Bar Pills dynamically
+      let filterHtml = `<button class="filter-pill ${selectedGroupFilter === 'ALL' ? 'active' : ''}" onclick="filterGroup('ALL', this)">ALL GROUPS</button>`;
+      allActiveGroups.forEach(g => {
+        filterHtml += `<button class="filter-pill ${selectedGroupFilter === g ? 'active' : ''}" onclick="filterGroup('${g}', this)">GROUP ${g}</button>`;
+      });
+      document.getElementById('filterBar').innerHTML = filterHtml;
+
+      const activeGroups = selectedGroupFilter === 'ALL' ? allActiveGroups : [selectedGroupFilter];
       const timeSlotMap = {};
       const groupCounters = {};
 
@@ -317,14 +475,19 @@
         timeSlotMap[timeStr][m.group] = { teamA, teamB, status: m.status };
       });
 
+      // Render Table
       let html = '<table><thead><tr><th>Time</th>';
       activeGroups.forEach(g => {
         html += `<th>Group ${g} <span>(${groupCourtMap[g] || 'Court 4'})</span></th>`;
       });
       html += '</tr></thead><tbody>';
 
+      let timeButtonsHtml = '';
+
       Object.keys(timeSlotMap).forEach(time => {
-        html += `<tr><td class="time-col">${time}</td>`;
+        const rowId = `slot-${time.replace(':', '')}`;
+        html += `<tr id="${rowId}"><td class="time-col">${time}</td>`;
+        
         activeGroups.forEach(g => {
           const item = timeSlotMap[time][g];
           const courtName = groupCourtMap[g] || 'Court 4';
@@ -341,10 +504,43 @@
           }
         });
         html += '</tr>';
+
+        // Add to Jump Drawer Buttons
+        timeButtonsHtml += `<button class="time-btn" onclick="scrollToTime('${rowId}')">${time}</button>`;
       });
 
       html += '</tbody></table>';
       document.getElementById('gridContainer').innerHTML = html;
+      document.getElementById('timeGrid').innerHTML = timeButtonsHtml;
+    }
+
+    function filterGroup(group, btnElement) {
+      selectedGroupFilter = group;
+      renderGrid();
+    }
+
+    function toggleDrawer(show) {
+      const overlay = document.getElementById('drawerOverlay');
+      const sheet = document.getElementById('drawerSheet');
+      if (show) {
+        overlay.style.display = 'block';
+        setTimeout(() => sheet.classList.add('open'), 10);
+      } else {
+        sheet.classList.remove('open');
+        setTimeout(() => overlay.style.display = 'none', 250);
+      }
+    }
+
+    function scrollToTime(rowId) {
+      toggleDrawer(false);
+      setTimeout(() => {
+        const el = document.getElementById(rowId);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.classList.add('jump-highlight');
+          setTimeout(() => el.classList.remove('jump-highlight'), 1200);
+        }
+      }, 200);
     }
   </script>
 </body>
