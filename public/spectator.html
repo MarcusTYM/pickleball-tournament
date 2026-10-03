@@ -33,14 +33,17 @@
       gap: 15px;
       margin-bottom: 24px;
     }
-    .brand-logo-card {
-      background: white;
-      padding: 6px 14px;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-    }
-    .brand-logo { height: 50px; object-fit: contain; }
+.brand-logo-card {
+  background: transparent;
+  padding: 0;
+}
+
+.brand-logo {
+  height: 50px;
+  object-fit: contain;
+  mix-blend-mode: screen; /* Blends pure white background away into dark blue */
+  filter: contrast(1.2);
+}
     h1 { color: #ffffff; font-size: clamp(20px, 4vw, 28px); margin: 0; font-weight: 800; letter-spacing: -0.5px; text-align: center; }
     
     .section-header {
