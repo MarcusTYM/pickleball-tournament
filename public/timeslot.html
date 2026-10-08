@@ -224,7 +224,7 @@
 
     /* TROPHY ICON */
     .trophy-icon {
-      font-size: 22px;
+      font-size: 20px;
       justify-self: center;
       line-height: 1;
       display: block;
@@ -758,9 +758,7 @@
 
           if (item) {
             const statusLower = (item.status || '').toLowerCase();
-            const hasScore = item.scoreA > 0 || item.scoreB > 0;
             const isFinished = statusLower === 'completed' || statusLower === 'finished';
-            const isLiveOrDone = isFinished || statusLower === 'in_progress' || statusLower === 'active' || hasScore;
 
             const vsDividerHtml = `
               <div class="vs-divider">
@@ -769,36 +767,40 @@
                 <div class="vs-line"></div>
               </div>`;
 
-            if (isLiveOrDone) {
-              const isWinnerA = isFinished && (item.scoreA > item.scoreB);
-              const isWinnerB = isFinished && (item.scoreB > item.scoreA);
-              const scoreClass = isFinished ? 'mini-score' : 'mini-score live-score';
+            // STRICT GATING: Only determine winners if match is officially completed
+            const isWinnerA = isFinished && (item.scoreA > item.scoreB);
+            const isWinnerB = isFinished && (item.scoreB > item.scoreA);
 
-              html += `<td class="match-cell ${isFinished ? 'completed' : ''}" data-label="${mobileLabel}">
+            if (isFinished) {
+              html += `<td class="match-cell completed" data-label="${mobileLabel}">
                 <div class="team-block">
                   <div>${isWinnerA ? '<span class="trophy-icon">🏆</span>' : ''}</div>
                   <div class="team-name ${isWinnerA ? 'winner-name' : ''}">${item.teamA}</div>
-                  <span class="${scoreClass}">${item.scoreA}</span>
+                  <span class="mini-score">${item.scoreA}</span>
                 </div>
                 ${vsDividerHtml}
                 <div class="team-block">
-                  <div>${isWinnerA ? '<span class="trophy-icon">🏆</span>' : ''}</div>
+                  <div>${isWinnerB ? '<span class="trophy-icon">🏆</span>' : ''}</div>
                   <div class="team-name ${isWinnerB ? 'winner-name' : ''}">${item.teamB}</div>
-                  <span class="${scoreClass}">${item.scoreB}</span>
+                  <span class="mini-score">${item.scoreB}</span>
                 </div>
               </td>`;
             } else {
+              // Unfinished/In-progress/Score typed but not submitted yet
+              const isLive = statusLower === 'in_progress' || statusLower === 'active' || item.scoreA > 0 || item.scoreB > 0;
+              const scoreClass = isLive ? 'mini-score live-score' : 'mini-score';
+
               html += `<td class="match-cell" data-label="${mobileLabel}">
                 <div class="team-block">
                   <div></div>
                   <div class="team-name">${item.teamA}</div>
-                  <div></div>
+                  <span class="${scoreClass}">${item.scoreA}</span>
                 </div>
                 ${vsDividerHtml}
                 <div class="team-block">
                   <div></div>
                   <div class="team-name">${item.teamB}</div>
-                  <div></div>
+                  <span class="${scoreClass}">${item.scoreB}</span>
                 </div>
               </td>`;
             }
@@ -839,8 +841,9 @@
           const scoreA = Number(m.scoreA ?? 0);
           const scoreB = Number(m.scoreB ?? 0);
           const statusLower = (m.status || '').toLowerCase();
-          const hasScore = scoreA > 0 || scoreB > 0;
-          const isFinished = statusLower === 'completed' || statusLower === 'finished' || (hasScore && scoreA !== scoreB);
+          
+          // STRICT GATING: Completed matches only
+          const isFinished = statusLower === 'completed' || statusLower === 'finished';
           
           const isWinnerA = isFinished && (scoreA > scoreB);
           const isWinnerB = isFinished && (scoreB > scoreA);
@@ -851,21 +854,41 @@
           const teamA = formatPairNameStacked(rawTeamA);
           const teamB = formatPairNameStacked(rawTeamB);
 
-          // Direct String & Position Inspection for Stage Badges
+          // Identify stage type
           let stageLabelHtml = '';
           const teamCombined = (rawTeamA + ' ' + rawTeamB).toLowerCase();
 
-          if (teamCombined.includes('runner-up') || teamCombined.includes('loser sf') || (totalMatchesInRound >= 2 && idx === totalMatchesInRound - 2)) {
+          const is3rdPlace = teamCombined.includes('runner-up') || teamCombined.includes('loser sf') || (totalMatchesInRound >= 2 && idx === totalMatchesInRound - 2);
+          const isFinals = teamCombined.includes('winner sf') || (totalMatchesInRound >= 2 && idx === totalMatchesInRound - 1);
+
+          if (is3rdPlace) {
             stageLabelHtml = `<div class="match-stage-label">3rd Place Playoff</div>`;
-          } else if (teamCombined.includes('winner sf') || (totalMatchesInRound >= 2 && idx === totalMatchesInRound - 1)) {
+          } else if (isFinals) {
             stageLabelHtml = `<div class="match-stage-label finals">Finals (1st / 2nd)</div>`;
+          }
+
+          // Trophy Icons by stage (Gold for Finals winner, Silver for Finals runner-up, Bronze for 3rd Place winner)
+          let trophyA = '';
+          let trophyB = '';
+
+          if (isFinished) {
+            if (isFinals) {
+              trophyA = isWinnerA ? '🥇' : '🥈';
+              trophyB = isWinnerB ? '🥇' : '🥈';
+            } else if (is3rdPlace) {
+              trophyA = isWinnerA ? '🥉' : '';
+              trophyB = isWinnerB ? '🥉' : '';
+            } else {
+              trophyA = isWinnerA ? '🏆' : '';
+              trophyB = isWinnerB ? '🏆' : '';
+            }
           }
 
           html += `
             <div class="bracket-match ${isFinished ? 'completed' : ''}">
               ${stageLabelHtml}
               <div class="team-block">
-                <div>${isWinnerA ? '<span class="trophy-icon">🏆</span>' : ''}</div>
+                <div><span class="trophy-icon">${trophyA}</span></div>
                 <div class="team-name ${isWinnerA ? 'winner-name' : ''}">${teamA}</div>
                 <span class="mini-score">${scoreA}</span>
               </div>
@@ -875,7 +898,7 @@
                 <div class="vs-line"></div>
               </div>
               <div class="team-block">
-                <div>${isWinnerB ? '<span class="trophy-icon">🏆</span>' : ''}</div>
+                <div><span class="trophy-icon">${trophyB}</span></div>
                 <div class="team-name ${isWinnerB ? 'winner-name' : ''}">${teamB}</div>
                 <span class="mini-score">${scoreB}</span>
               </div>
