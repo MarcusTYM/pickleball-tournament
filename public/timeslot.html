@@ -25,7 +25,7 @@
       padding: 16px;
       background: #f1f5f9;
       color: var(--text-main);
-      padding-bottom: 90px; /* Leave room for floating buttons */
+      padding-bottom: 90px;
     }
 
     .header {
@@ -64,9 +64,9 @@
       overflow-x: auto;
       padding: 4px 2px 10px 2px;
       margin-bottom: 10px;
-      scrollbar-width: none; /* Hide scrollbar Firefox */
+      scrollbar-width: none;
     }
-    .filter-bar::-webkit-scrollbar { display: none; } /* Hide scrollbar Chrome/Safari */
+    .filter-bar::-webkit-scrollbar { display: none; }
 
     .filter-pill {
       background: #ffffff;
@@ -98,7 +98,7 @@
       border: 1px solid var(--border-color);
     }
 
-    /* Desktop Table Layout */
+    /* Table Styling */
     table {
       width: 100%;
       border-collapse: separate;
@@ -152,10 +152,10 @@
       text-align: center;
     }
 
-    /* ALIGNMENT FIX: 3-Column Grid guarantees perfectly centered player names */
+    /* Aligning Trophy, Name, Score Badge */
     .team-block {
       display: grid;
-      grid-template-columns: 28px 1fr 34px;
+      grid-template-columns: 32px 1fr 34px;
       align-items: center;
       gap: 4px;
       margin: 4px 0;
@@ -169,16 +169,32 @@
       line-height: 1.35;
     }
 
-    .match-cell .vs {
+    /* RED DIVIDER WITH CENTRAL -VS- */
+    .vs-divider {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin: 6px 0;
+      width: 100%;
+    }
+
+    .vs-line {
+      flex: 1;
+      height: 1.5px;
+      background-color: var(--primary-red);
+      border-radius: 1px;
+    }
+
+    .vs-text {
       color: var(--primary-red);
       font-weight: 800;
       font-size: 11px;
-      margin: 2px 0;
-      display: block;
       letter-spacing: 1px;
+      white-space: nowrap;
     }
 
-    /* INDIVIDUAL SCORE BADGE STYLING */
+    /* SCORE BADGE & SLIGHTLY LARGER TROPHY */
     .mini-score {
       display: inline-block;
       background: var(--soft-slate);
@@ -194,11 +210,11 @@
     }
 
     .live-score {
-      background: #e11d48 !important; /* Vivid red for live scoring */
+      background: #e11d48 !important;
     }
 
     .trophy-icon {
-      font-size: 15px;
+      font-size: 18px; /* Slightly larger trophy */
       justify-self: center;
       line-height: 1;
     }
@@ -222,13 +238,13 @@
       text-align: center;
     }
 
-    /* Alternating Court Columns (Desktop) */
+    /* Alternating Court Columns */
     tbody tr td:nth-child(2) { background-color: var(--light-bg-1); }
     tbody tr td:nth-child(3) { background-color: var(--light-bg-2); }
     tbody tr td:nth-child(4) { background-color: var(--light-bg-1); }
     tbody tr td:nth-child(5) { background-color: var(--light-bg-2); }
 
-    /* Highlight pulse animation for jumped row */
+    /* Jump Highlight */
     @keyframes highlightRow {
       0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(192, 57, 43, 0.4); }
       50% { transform: scale(1.02); box-shadow: 0 0 15px 4px rgba(192, 57, 43, 0.3); }
@@ -238,7 +254,7 @@
       animation: highlightRow 1.2s ease-in-out;
     }
 
-    /* FLOATING ACTION BUTTON CONTAINER */
+    /* FLOATING ACTION BUTTONS */
     .fab-container {
       position: fixed;
       bottom: 24px;
@@ -268,7 +284,6 @@
 
     .fab-btn:active { transform: scale(0.95); }
 
-    /* BACK TO TOP BUTTON (Auto-hides at top) */
     .fab-top {
       background: #475569;
       opacity: 0;
@@ -282,7 +297,7 @@
       transform: translateY(0);
     }
 
-    /* JUMP DRAWER OVERLAY & SHEET */
+    /* JUMP DRAWER */
     .drawer-overlay {
       display: none;
       position: fixed;
@@ -306,7 +321,6 @@
       box-shadow: 0 -10px 25px rgba(0,0,0,0.15);
     }
 
-    /* Desktop Drawer Width Optimization */
     @media (min-width: 769px) {
       .drawer-sheet {
         max-width: 500px;
@@ -376,7 +390,7 @@
       border-color: var(--soft-slate);
     }
 
-    /* --- Mobile Responsive Layout (<= 768px) --- */
+    /* Mobile Cards View */
     @media (max-width: 768px) {
       .table-card {
         max-height: none;
@@ -405,7 +419,6 @@
         overflow: hidden;
         border: 1px solid var(--border-color);
         background: #ffffff;
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
       }
 
       td.time-col {
@@ -451,11 +464,8 @@
         text-transform: uppercase;
         letter-spacing: 0.5px;
       }
-
-      .match-cell .vs { text-align: center; margin: 4px 0; }
     }
 
-    /* FOOTER STYLING */
     footer {
       display: flex;
       align-items: center;
@@ -473,7 +483,6 @@
       height: 48px;
       width: auto;
       object-fit: contain;
-      vertical-align: middle;
       mix-blend-mode: multiply;
     }
   </style>
@@ -486,7 +495,6 @@
     <p>Pickleball Blind Box Challenge 2026</p>
   </div>
 
-  <!-- GROUP FILTER BAR -->
   <div class="filter-bar" id="filterBar">
     <button class="filter-pill active" onclick="filterGroup('ALL', this)">ALL GROUPS</button>
   </div>
@@ -495,7 +503,6 @@
     <div id="gridContainer">Loading schedule...</div>
   </div>
 
-  <!-- FLOATING ACTION BUTTONS -->
   <div class="fab-container">
     <button class="fab-btn fab-top" id="btnBackToTop" onclick="scrollToTop()">
       ⬆ Back to Top
@@ -505,7 +512,6 @@
     </button>
   </div>
 
-  <!-- JUMP DRAWER POPUP -->
   <div class="drawer-overlay" id="drawerOverlay" onclick="toggleDrawer(false)"></div>
   <div class="drawer-sheet" id="drawerSheet">
     <div class="drawer-header">
@@ -549,7 +555,7 @@
     }
 
     function formatTime(totalMinutesFromStart) {
-      const startHour = 9; // Starts at 9:00 AM
+      const startHour = 9;
       const totalMinutes = (startHour * 60) + totalMinutesFromStart;
       const hours = Math.floor(totalMinutes / 60);
       const minutes = totalMinutes % 60;
@@ -636,6 +642,13 @@
             const isFinished = statusLower === 'completed' || statusLower === 'finished';
             const isLiveOrDone = isFinished || statusLower === 'in_progress' || statusLower === 'active' || hasScore;
 
+            const vsDividerHtml = `
+              <div class="vs-divider">
+                <div class="vs-line"></div>
+                <div class="vs-text">-VS-</div>
+                <div class="vs-line"></div>
+              </div>`;
+
             if (isLiveOrDone) {
               const isWinnerA = isFinished && (item.scoreA > item.scoreB);
               const isWinnerB = isFinished && (item.scoreB > item.scoreA);
@@ -647,7 +660,7 @@
                   <div class="team-name ${isWinnerA ? 'winner-name' : ''}">${item.teamA}</div>
                   <span class="${scoreClass}">${item.scoreA}</span>
                 </div>
-                <span class="vs">-VS-</span>
+                ${vsDividerHtml}
                 <div class="team-block">
                   <div>${isWinnerB ? '<span class="trophy-icon">🏆</span>' : ''}</div>
                   <div class="team-name ${isWinnerB ? 'winner-name' : ''}">${item.teamB}</div>
@@ -655,14 +668,13 @@
                 </div>
               </td>`;
             } else {
-              // Standard upcoming match display
               html += `<td class="match-cell" data-label="${mobileLabel}">
                 <div class="team-block">
                   <div></div>
                   <div class="team-name">${item.teamA}</div>
                   <div></div>
                 </div>
-                <span class="vs">-VS-</span>
+                ${vsDividerHtml}
                 <div class="team-block">
                   <div></div>
                   <div class="team-name">${item.teamB}</div>
