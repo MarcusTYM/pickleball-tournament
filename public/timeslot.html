@@ -14,6 +14,7 @@
       --border-color: #cbd5e1;      /* Crisp border tint */
       --text-main: #1e293b;
       --text-muted: #64748b;
+      --winner-green: #059669;      /* Green accent for winning pair */
     }
 
     * { box-sizing: border-box; }
@@ -164,6 +165,33 @@
       margin: 4px 0;
       display: block;
       letter-spacing: 1px;
+    }
+
+    /* SCORE DISPLAY STYLING FOR FINISHED MATCHES */
+    .match-cell .score-badge {
+      display: inline-block;
+      background: var(--soft-slate);
+      color: #ffffff;
+      font-weight: 800;
+      font-size: 13px;
+      padding: 3px 12px;
+      border-radius: 12px;
+      margin: 4px 0;
+      letter-spacing: 1px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+    }
+
+    .match-cell.completed {
+      background-color: #f8fafc !important;
+    }
+
+    .match-cell.completed strong {
+      color: #475569;
+    }
+
+    .match-cell .winner-name {
+      color: var(--winner-green) !important;
+      font-weight: 700 !important;
     }
 
     .empty-cell {
@@ -405,7 +433,7 @@
       .match-cell .vs { text-align: center; margin: 4px 0; }
     }
 
-    /* FOOTER STYLING (MATCHED TO DASHBOARD) */
+    /* FOOTER STYLING */
     footer {
       display: flex;
       align-items: center;
@@ -489,7 +517,6 @@
       }
     }
 
-    // Capture scrolling on window and nested elements
     window.addEventListener('scroll', handleScroll, true);
 
     function scrollToTop() {
@@ -553,7 +580,14 @@
         
         const teamA = formatPairNameStacked(m.teamA);
         const teamB = formatPairNameStacked(m.teamB);
-        timeSlotMap[timeStr][m.group] = { teamA, teamB, status: m.status };
+
+        timeSlotMap[timeStr][m.group] = { 
+          teamA, 
+          teamB, 
+          status: m.status,
+          scoreA: m.scoreA ?? m.score1 ?? 0,
+          scoreB: m.scoreB ?? m.score2 ?? 0
+        };
       });
 
       // Render Table
@@ -575,11 +609,26 @@
           const mobileLabel = `GROUP ${g} (${courtName})`;
 
           if (item) {
-            html += `<td class="match-cell" data-label="${mobileLabel}">
-              <strong>${item.teamA}</strong>
-              <span class="vs">-VS-</span>
-              <strong>${item.teamB}</strong>
-            </td>`;
+            const isCompleted = item.status === 'completed' || item.status === 'FINISHED';
+
+            if (isCompleted) {
+              // Finished match: display score badge & highlight winner
+              const isWinnerA = item.scoreA > item.scoreB;
+              const isWinnerB = item.scoreB > item.scoreA;
+
+              html += `<td class="match-cell completed" data-label="${mobileLabel}">
+                <strong class="${isWinnerA ? 'winner-name' : ''}">${item.teamA}</strong>
+                <div class="score-badge">${item.scoreA} - ${item.scoreB}</div>
+                <strong class="${isWinnerB ? 'winner-name' : ''}">${item.teamB}</strong>
+              </td>`;
+            } else {
+              // Standard upcoming/in-progress match display
+              html += `<td class="match-cell" data-label="${mobileLabel}">
+                <strong>${item.teamA}</strong>
+                <span class="vs">-VS-</span>
+                <strong>${item.teamB}</strong>
+              </td>`;
+            }
           } else {
             html += `<td class="empty-cell" data-label="${mobileLabel}">-</td>`;
           }
