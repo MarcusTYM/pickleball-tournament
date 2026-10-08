@@ -148,12 +148,19 @@
 
     .match-cell {
       font-size: 12px;
-      line-height: 1.5;
+      line-height: 1.4;
       text-align: center;
     }
 
-    .match-cell strong {
-      display: block;
+    .team-block {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin: 3px 0;
+    }
+
+    .team-name {
       font-weight: 600;
       color: #0f172a;
     }
@@ -167,25 +174,35 @@
       letter-spacing: 1px;
     }
 
-    /* SCORE DISPLAY STYLING */
-    .match-cell .score-badge {
+    /* INDIVIDUAL SCORE BADGE STYLING */
+    .mini-score {
       display: inline-block;
       background: var(--soft-slate);
       color: #ffffff;
       font-weight: 800;
-      font-size: 13px;
-      padding: 3px 12px;
-      border-radius: 12px;
-      margin: 4px 0;
-      letter-spacing: 1px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+      font-size: 12px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      min-width: 26px;
+      text-align: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    }
+
+    .live-score {
+      background: #e11d48 !important; /* Vivid red for live scoring */
+    }
+
+    .trophy-icon {
+      font-size: 14px;
+      margin-left: 2px;
+      display: inline-block;
     }
 
     .match-cell.completed {
       background-color: #f8fafc !important;
     }
 
-    .match-cell.completed strong {
+    .match-cell.completed .team-name {
       color: #475569;
     }
 
@@ -504,7 +521,6 @@
     let currentScheduleData = null;
     let selectedGroupFilter = 'ALL';
 
-    // Check scroll position across BOTH window (mobile) and .table-card (desktop)
     function handleScroll() {
       const btnTop = document.getElementById('btnBackToTop');
       const tableCard = document.getElementById('tableCard');
@@ -560,7 +576,6 @@
       
       const allActiveGroups = [...new Set(schedule.map(m => m.group))].sort();
       
-      // Update Filter Bar Pills dynamically
       let filterHtml = `<button class="filter-pill ${selectedGroupFilter === 'ALL' ? 'active' : ''}" onclick="filterGroup('ALL', this)">ALL GROUPS</button>`;
       allActiveGroups.forEach(g => {
         filterHtml += `<button class="filter-pill ${selectedGroupFilter === g ? 'active' : ''}" onclick="filterGroup('${g}', this)">GROUP ${g}</button>`;
@@ -581,7 +596,6 @@
         const teamA = formatPairNameStacked(m.teamA);
         const teamB = formatPairNameStacked(m.teamB);
 
-        // Map score properties flexibly across potential schema names
         const scoreA = m.scoreA ?? m.score1 ?? m.teamAScore ?? 0;
         const scoreB = m.scoreB ?? m.score2 ?? m.teamBScore ?? 0;
 
@@ -594,7 +608,6 @@
         };
       });
 
-      // Render Table
       let html = '<table><thead><tr><th>Time</th>';
       activeGroups.forEach(g => {
         html += `<th>Group ${g} <span>(${groupCourtMap[g] || 'Court 4'})</span></th>`;
@@ -619,21 +632,29 @@
             const isLiveOrDone = isFinished || statusLower === 'in_progress' || statusLower === 'active' || hasScore;
 
             if (isLiveOrDone) {
-              const isWinnerA = item.scoreA > item.scoreB;
-              const isWinnerB = item.scoreB > item.scoreA;
-              const badgeStyle = isFinished ? '' : 'background: #e11d48;'; // Red pill if live
+              const isWinnerA = isFinished && (item.scoreA > item.scoreB);
+              const isWinnerB = isFinished && (item.scoreB > item.scoreA);
+              const scoreClass = isFinished ? 'mini-score' : 'mini-score live-score';
 
               html += `<td class="match-cell ${isFinished ? 'completed' : ''}" data-label="${mobileLabel}">
-                <strong class="${isFinished && isWinnerA ? 'winner-name' : ''}">${item.teamA}</strong>
-                <div class="score-badge" style="${badgeStyle}">${item.scoreA} - ${item.scoreB}</div>
-                <strong class="${isFinished && isWinnerB ? 'winner-name' : ''}">${item.teamB}</strong>
+                <div class="team-block">
+                  <span class="team-name ${isWinnerA ? 'winner-name' : ''}">${item.teamA}</span>
+                  <span class="${scoreClass}">${item.scoreA}</span>
+                  ${isWinnerA ? '<span class="trophy-icon">🏆</span>' : ''}
+                </div>
+                <span class="vs">-VS-</span>
+                <div class="team-block">
+                  <span class="team-name ${isWinnerB ? 'winner-name' : ''}">${item.teamB}</span>
+                  <span class="${scoreClass}">${item.scoreB}</span>
+                  ${isWinnerB ? '<span class="trophy-icon">🏆</span>' : ''}
+                </div>
               </td>`;
             } else {
-              // Standard upcoming match display (-VS-)
+              // Standard upcoming match display
               html += `<td class="match-cell" data-label="${mobileLabel}">
-                <strong>${item.teamA}</strong>
+                <div class="team-block"><span class="team-name">${item.teamA}</span></div>
                 <span class="vs">-VS-</span>
-                <strong>${item.teamB}</strong>
+                <div class="team-block"><span class="team-name">${item.teamB}</span></div>
               </td>`;
             }
           } else {
@@ -642,7 +663,6 @@
         });
         html += '</tr>';
 
-        // Add to Jump Drawer Buttons
         timeButtonsHtml += `<button class="time-btn" onclick="scrollToTime('${rowId}')">${time}</button>`;
       });
 
