@@ -190,7 +190,7 @@
     .vs-line {
       flex: 1;
       height: 1px;
-      background-color: var(--border-color); /* Muted slate border tint */
+      background-color: var(--border-color);
     }
 
     .vs-text {
@@ -238,7 +238,7 @@
       color: #475569;
     }
 
-    /* WINNER NAME HIGHLIGHT (ROUND ROBIN & KNOCKOUT) */
+    /* WINNER NAME HIGHLIGHT */
     .winner-name {
       color: var(--winner-green) !important;
       font-weight: 700 !important;
@@ -286,6 +286,20 @@
       padding: 8px;
       border-radius: 8px;
       font-style: normal;
+    }
+
+    .match-stage-label {
+      text-align: center;
+      font-weight: 800;
+      font-size: 12px;
+      color: var(--primary-red);
+      background: #fef2f2;
+      border: 1px dashed #fca5a5;
+      padding: 4px 8px;
+      border-radius: 6px;
+      margin-bottom: 6px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
     }
 
     .bracket-match {
@@ -649,7 +663,9 @@
 
     function formatPairNameStacked(rawName) {
       if (!rawName) return '';
-      return rawName
+      // Replace "Loser" with "Runner-up" if passed from backend strings
+      let cleanName = rawName.replace(/Loser/gi, 'Runner-up');
+      return cleanName
         .split(/[\/&\n]+/)
         .map(part => part.trim())
         .filter(part => part.length > 0)
@@ -813,7 +829,7 @@
         html += `<div class="bracket-round">
           <div class="bracket-round-title">${roundName}</div>`;
         
-        rounds[roundName].forEach(m => {
+        rounds[roundName].forEach((m, idx) => {
           const scoreA = Number(m.scoreA ?? 0);
           const scoreB = Number(m.scoreB ?? 0);
           const statusLower = (m.status || '').toLowerCase();
@@ -825,8 +841,19 @@
           const teamA = formatPairNameStacked(m.teamA || 'TBD');
           const teamB = formatPairNameStacked(m.teamB || 'TBD');
 
+          // Stage label determination (3rd Place Playoff / Finals (1st/2nd))
+          let stageLabelHtml = '';
+          const matchType = (m.matchType || m.type || '').toLowerCase();
+          
+          if (matchType.includes('3rd') || matchType.includes('bronze') || (roundName.toLowerCase().includes('final') && idx === rounds[roundName].length - 2)) {
+            stageLabelHtml = `<div class="match-stage-label">3rd Place Playoff</div>`;
+          } else if (matchType.includes('final') || (roundName.toLowerCase().includes('final') && idx === rounds[roundName].length - 1)) {
+            stageLabelHtml = `<div class="match-stage-label">Finals (1st / 2nd)</div>`;
+          }
+
           html += `
             <div class="bracket-match ${isFinished ? 'completed' : ''}">
+              ${stageLabelHtml}
               <div class="team-block">
                 <div>${isWinnerA ? '<span class="trophy-icon">🏆</span>' : ''}</div>
                 <div class="team-name ${isWinnerA ? 'winner-name' : ''}">${teamA}</div>
