@@ -109,7 +109,7 @@
     th, td {
       border-bottom: 1px solid var(--border-color);
       border-right: 1px solid var(--border-color);
-      padding: 12px 14px;
+      padding: 12px 10px;
       text-align: center;
       font-size: 13px;
       vertical-align: middle;
@@ -152,24 +152,28 @@
       text-align: center;
     }
 
+    /* ALIGNMENT FIX: 3-Column Grid guarantees perfectly centered player names */
     .team-block {
-      display: flex;
+      display: grid;
+      grid-template-columns: 28px 1fr 34px;
       align-items: center;
-      justify-content: center;
-      gap: 8px;
-      margin: 3px 0;
+      gap: 4px;
+      margin: 4px 0;
+      width: 100%;
     }
 
     .team-name {
       font-weight: 600;
       color: #0f172a;
+      text-align: center;
+      line-height: 1.35;
     }
 
     .match-cell .vs {
       color: var(--primary-red);
       font-weight: 800;
       font-size: 11px;
-      margin: 4px 0;
+      margin: 2px 0;
       display: block;
       letter-spacing: 1px;
     }
@@ -181,11 +185,12 @@
       color: #ffffff;
       font-weight: 800;
       font-size: 12px;
-      padding: 2px 8px;
-      border-radius: 10px;
-      min-width: 26px;
+      padding: 3px 0;
+      border-radius: 12px;
+      width: 32px;
       text-align: center;
       box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+      justify-self: end;
     }
 
     .live-score {
@@ -193,9 +198,9 @@
     }
 
     .trophy-icon {
-      font-size: 14px;
-      margin-left: 2px;
-      display: inline-block;
+      font-size: 15px;
+      justify-self: center;
+      line-height: 1;
     }
 
     .match-cell.completed {
@@ -638,23 +643,31 @@
 
               html += `<td class="match-cell ${isFinished ? 'completed' : ''}" data-label="${mobileLabel}">
                 <div class="team-block">
-                  <span class="team-name ${isWinnerA ? 'winner-name' : ''}">${item.teamA}</span>
+                  <div>${isWinnerA ? '<span class="trophy-icon">🏆</span>' : ''}</div>
+                  <div class="team-name ${isWinnerA ? 'winner-name' : ''}">${item.teamA}</div>
                   <span class="${scoreClass}">${item.scoreA}</span>
-                  ${isWinnerA ? '<span class="trophy-icon">🏆</span>' : ''}
                 </div>
                 <span class="vs">-VS-</span>
                 <div class="team-block">
-                  <span class="team-name ${isWinnerB ? 'winner-name' : ''}">${item.teamB}</span>
+                  <div>${isWinnerB ? '<span class="trophy-icon">🏆</span>' : ''}</div>
+                  <div class="team-name ${isWinnerB ? 'winner-name' : ''}">${item.teamB}</div>
                   <span class="${scoreClass}">${item.scoreB}</span>
-                  ${isWinnerB ? '<span class="trophy-icon">🏆</span>' : ''}
                 </div>
               </td>`;
             } else {
               // Standard upcoming match display
               html += `<td class="match-cell" data-label="${mobileLabel}">
-                <div class="team-block"><span class="team-name">${item.teamA}</span></div>
+                <div class="team-block">
+                  <div></div>
+                  <div class="team-name">${item.teamA}</div>
+                  <div></div>
+                </div>
                 <span class="vs">-VS-</span>
-                <div class="team-block"><span class="team-name">${item.teamB}</span></div>
+                <div class="team-block">
+                  <div></div>
+                  <div class="team-name">${item.teamB}</div>
+                  <div></div>
+                </div>
               </td>`;
             }
           } else {
