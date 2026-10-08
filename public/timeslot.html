@@ -288,23 +288,28 @@
       font-style: normal;
     }
 
-    /* RED/SLATE HEADER BADGES FOR MATCH TYPES */
+    /* STAGE BADGES OUTSIDE MATCH CARD */
     .match-stage-label {
       text-align: center;
       font-weight: 800;
       font-size: 11px;
       color: #ffffff;
-      background: var(--primary-red);
       padding: 6px 12px;
-      border-radius: 6px;
-      margin-bottom: 10px;
+      border-radius: 8px 8px 0 0;
+      margin-top: 10px;
       letter-spacing: 0.8px;
       text-transform: uppercase;
       box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
 
-    .match-stage-label.finals {
-      background: var(--soft-slate);
+    .match-stage-label.bronze {
+      background: linear-gradient(135deg, #cd7f32, #a05a2c);
+      color: #ffffff;
+    }
+
+    .match-stage-label.gold {
+      background: linear-gradient(135deg, #d4af37, #b8860b);
+      color: #ffffff;
     }
 
     .bracket-match {
@@ -312,9 +317,14 @@
       border: 1px solid var(--border-color);
       border-radius: 10px;
       padding: 12px;
-      margin: 10px 0;
+      margin-bottom: 10px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.04);
       font-style: normal;
+    }
+
+    .match-stage-label + .bracket-match {
+      border-top-left-radius: 0;
+      border-top-right-radius: 0;
     }
 
     .bracket-match.completed {
@@ -767,7 +777,6 @@
                 <div class="vs-line"></div>
               </div>`;
 
-            // STRICT GATING: Only determine winners if match is officially completed
             const isWinnerA = isFinished && (item.scoreA > item.scoreB);
             const isWinnerB = isFinished && (item.scoreB > item.scoreA);
 
@@ -786,7 +795,6 @@
                 </div>
               </td>`;
             } else {
-              // Unfinished/In-progress/Score typed but not submitted yet
               const isLive = statusLower === 'in_progress' || statusLower === 'active' || item.scoreA > 0 || item.scoreB > 0;
               const scoreClass = isLive ? 'mini-score live-score' : 'mini-score';
 
@@ -842,7 +850,6 @@
           const scoreB = Number(m.scoreB ?? 0);
           const statusLower = (m.status || '').toLowerCase();
           
-          // STRICT GATING: Completed matches only
           const isFinished = statusLower === 'completed' || statusLower === 'finished';
           
           const isWinnerA = isFinished && (scoreA > scoreB);
@@ -862,12 +869,11 @@
           const isFinals = teamCombined.includes('winner sf') || (totalMatchesInRound >= 2 && idx === totalMatchesInRound - 1);
 
           if (is3rdPlace) {
-            stageLabelHtml = `<div class="match-stage-label">3rd Place Playoff</div>`;
+            stageLabelHtml = `<div class="match-stage-label bronze">🥉 3RD PLACE PLAYOFF</div>`;
           } else if (isFinals) {
-            stageLabelHtml = `<div class="match-stage-label finals">Finals (1st / 2nd)</div>`;
+            stageLabelHtml = `<div class="match-stage-label gold">🥇 FINALS (1ST / 2ND)</div>`;
           }
 
-          // Trophy Icons by stage (Gold for Finals winner, Silver for Finals runner-up, Bronze for 3rd Place winner)
           let trophyA = '';
           let trophyB = '';
 
@@ -885,8 +891,8 @@
           }
 
           html += `
+            ${stageLabelHtml}
             <div class="bracket-match ${isFinished ? 'completed' : ''}">
-              ${stageLabelHtml}
               <div class="team-block">
                 <div><span class="trophy-icon">${trophyA}</span></div>
                 <div class="team-name ${isWinnerA ? 'winner-name' : ''}">${teamA}</div>
