@@ -44,7 +44,7 @@
 
     .header-status-box {
       text-align: center;
-      margin-bottom: 20px;
+      margin-bottom: 12px;
     }
     
     .court-title {
@@ -80,7 +80,7 @@
       border: 1px solid #bae6fd;
     }
 
-    /* FORMAT TOGGLE CONTAINER (ONLY SHOWS FOR FINALS) */
+    /* FORMAT TOGGLE CONTAINER */
     .format-toggle-container {
       display: none;
       background: #fef3c7;
@@ -126,36 +126,58 @@
     input:checked + .slider { background-color: #f59e0b; }
     input:checked + .slider:before { transform: translateX(24px); }
 
-    /* SET STATUS DISPLAY */
+    /* IMPROVED SET STATUS DISPLAY */
     .sets-info-box {
       display: none;
-      font-size: 13px;
-      font-weight: 800;
-      color: #b45309;
       background: #fffbeb;
-      padding: 10px 16px;
-      border-radius: 10px;
+      border: 1.5px dashed #f59e0b;
+      border-radius: 12px;
+      padding: 12px 16px;
       margin: 12px 0 16px 0;
-      text-align: center;
-      border: 1.5px dashed #fde68a;
-      line-height: 1.5;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
     }
     .sets-info-box.visible {
       display: block;
     }
     .sets-header-title {
-      font-size: 12px;
+      font-size: 11px;
+      font-weight: 800;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: #d97706;
-      margin-bottom: 4px;
+      letter-spacing: 0.8px;
+      color: #b45309;
+      text-align: center;
+      margin-bottom: 10px;
     }
-    .sets-scores-wrapper {
-      display: flex;
-      justify-content: center;
-      gap: 20px;
-      font-size: 14px;
-      color: #78350f;
+    .sets-scores-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      align-items: center;
+    }
+    .set-team-column {
+      background: #ffffff;
+      border: 1px solid #fde68a;
+      border-radius: 8px;
+      padding: 8px 10px;
+      text-align: center;
+    }
+    .set-team-name {
+      font-size: 12px;
+      font-weight: 700;
+      color: #451a03;
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .set-score-pill {
+      display: inline-block;
+      font-size: 13px;
+      font-weight: 900;
+      color: #ffffff;
+      background: #d97706;
+      padding: 3px 12px;
+      border-radius: 12px;
     }
 
     .control-actions {
@@ -430,7 +452,6 @@
       isPaused: false
     };
 
-    // Best of 3 sets tracker state
     let isBestOfThreeActive = false;
     let setsWonA = 0;
     let setsWonB = 0;
@@ -477,14 +498,12 @@
           const currentA = normalize(matchData.teamA);
           const currentB = normalize(matchData.teamB);
 
-          // 1. Direct court match check
           const courtMatch = kMatches.find(m => String(m.court || m.courtId) === String(courtId));
           if (courtMatch) {
             const mLabel = (courtMatch.matchType || courtMatch.roundName || courtMatch.name || courtMatch.stage || '').toLowerCase();
             if (mLabel.includes('final') && !mLabel.includes('3rd')) return true;
           }
 
-          // 2. Normalized name search
           const foundByName = kMatches.find(m => {
             const mA = normalize(m.teamA);
             const mB = normalize(m.teamB);
@@ -498,7 +517,6 @@
             if (mLabel.includes('final') && !mLabel.includes('3rd')) return true;
           }
 
-          // 3. Fallback: Last knockout match in list
           const lastMatch = kMatches[kMatches.length - 1];
           if (lastMatch) {
             const lA = normalize(lastMatch.teamA);
@@ -531,11 +549,16 @@
       const nameB = cleanNameForDisplay(matchData.teamB);
 
       setsBox.innerHTML = `
-        <div class="sets-header-title">🏆 [First to Win 2 Sets]</div>
-        <div class="sets-scores-wrapper">
-          <div><strong>${nameA}:</strong> ${setsWonA} ${setsWonA === 1 ? 'Set' : 'Sets'}</div>
-          <div>|</div>
-          <div><strong>${nameB}:</strong> ${setsWonB} ${setsWonB === 1 ? 'Set' : 'Sets'}</div>
+        <div class="sets-header-title">🏆 Best of 3 Sets Status (First to 2 Sets)</div>
+        <div class="sets-scores-grid">
+          <div class="set-team-column">
+            <div class="set-team-name" title="${nameA}">${nameA}</div>
+            <span class="set-score-pill">${setsWonA} ${setsWonA === 1 ? 'SET' : 'SETS'}</span>
+          </div>
+          <div class="set-team-column">
+            <div class="set-team-name" title="${nameB}">${nameB}</div>
+            <span class="set-score-pill">${setsWonB} ${setsWonB === 1 ? 'SET' : 'SETS'}</span>
+          </div>
         </div>
       `;
       setsBox.classList.add('visible');
