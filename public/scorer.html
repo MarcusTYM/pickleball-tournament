@@ -472,28 +472,39 @@
         
         if (knockout && knockout.matches && knockout.matches.length > 0) {
           const kMatches = knockout.matches;
-          const currentA = cleanNameForDisplay(matchData.teamA).toLowerCase();
-          const currentB = cleanNameForDisplay(matchData.teamB).toLowerCase();
+          const normalize = str => (str || '').toLowerCase().replace(/[\/\&\n\s]+/g, '');
 
-          const foundMatch = kMatches.find(m => {
-            const isCourt = String(m.court || m.courtId) === String(courtId);
-            const mA = (m.teamA || '').toLowerCase();
-            const mB = (m.teamB || '').toLowerCase();
-            const isTeamMatch = (mA && mB) && ((mA.includes(currentA) && mB.includes(currentB)) || (mA.includes(currentB) && mB.includes(currentA)));
-            return isCourt || isTeamMatch;
-          });
+          const currentA = normalize(matchData.teamA);
+          const currentB = normalize(matchData.teamB);
 
-          if (foundMatch) {
-            const mLabel = (foundMatch.matchType || foundMatch.roundName || foundMatch.name || foundMatch.stage || '').toLowerCase();
+          // 1. Direct court match check
+          const courtMatch = kMatches.find(m => String(m.court || m.courtId) === String(courtId));
+          if (courtMatch) {
+            const mLabel = (courtMatch.matchType || courtMatch.roundName || courtMatch.name || courtMatch.stage || '').toLowerCase();
             if (mLabel.includes('final') && !mLabel.includes('3rd')) return true;
           }
 
+          // 2. Normalized name search
+          const foundByName = kMatches.find(m => {
+            const mA = normalize(m.teamA);
+            const mB = normalize(m.teamB);
+            return (mA && mB && currentA && currentB) && 
+                   ((mA.includes(currentA) || currentA.includes(mA)) && (mB.includes(currentB) || currentB.includes(mB)) ||
+                    (mA.includes(currentB) || currentB.includes(mA)) && (mB.includes(currentA) || currentA.includes(mB)));
+          });
+
+          if (foundByName) {
+            const mLabel = (foundByName.matchType || foundByName.roundName || foundByName.name || foundByName.stage || '').toLowerCase();
+            if (mLabel.includes('final') && !mLabel.includes('3rd')) return true;
+          }
+
+          // 3. Fallback: Last knockout match in list
           const lastMatch = kMatches[kMatches.length - 1];
           if (lastMatch) {
-            const lA = (lastMatch.teamA || '').toLowerCase();
-            const lB = (lastMatch.teamB || '').toLowerCase();
+            const lA = normalize(lastMatch.teamA);
+            const lB = normalize(lastMatch.teamB);
             if (lA && lB && currentA && currentB) {
-              if ((lA.includes(currentA) || currentA.includes(lA)) && (lB.includes(currentB) || currentB.includes(lB))) {
+              if ((lA.includes(currentA) || currentA.includes(lA)) || (lB.includes(currentB) || currentB.includes(lB))) {
                 return true;
               }
             }
@@ -502,10 +513,7 @@
       }
 
       const rName = (matchData.roundName || matchData.stage || matchData.matchType || matchData.type || matchData.round || '').toLowerCase();
-      const teamA = (matchData.teamA || '').toLowerCase();
-      const teamB = (matchData.teamB || '').toLowerCase();
-
-      return (rName.includes('final') && !rName.includes('3rd')) || teamA.includes('winner sf') || teamB.includes('winner sf') || teamA.includes('1st') || teamB.includes('1st');
+      return (rName.includes('final') && !rName.includes('3rd'));
     }
 
     function getMaxScoreLimit() {
