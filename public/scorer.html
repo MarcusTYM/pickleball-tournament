@@ -129,18 +129,33 @@
     /* SET STATUS DISPLAY */
     .sets-info-box {
       display: none;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 800;
       color: #b45309;
       background: #fffbeb;
-      padding: 6px;
-      border-radius: 6px;
-      margin-bottom: 12px;
+      padding: 10px 16px;
+      border-radius: 10px;
+      margin: 12px 0 16px 0;
       text-align: center;
-      border: 1px dashed #fde68a;
+      border: 1.5px dashed #fde68a;
+      line-height: 1.5;
     }
     .sets-info-box.visible {
       display: block;
+    }
+    .sets-header-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #d97706;
+      margin-bottom: 4px;
+    }
+    .sets-scores-wrapper {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      font-size: 14px;
+      color: #78350f;
     }
 
     .control-actions {
@@ -350,7 +365,7 @@
     </div>
   </div>
 
-  <div class="sets-info-box" id="setsInfoBox">Current Sets: Team A (0) - Team B (0) [First to win 2 sets]</div>
+  <div class="sets-info-box" id="setsInfoBox"></div>
 
   <div class="control-actions">
     <button class="btn-action btn-coin" onclick="openCoinModal()">🪙 Coin Toss</button>
@@ -494,8 +509,28 @@
     }
 
     function getMaxScoreLimit() {
-      // Finals always use 21 points cap per set (or single game)
       return isMatchFinals() ? 21 : 15;
+    }
+
+    function renderSetsDisplay() {
+      const setsBox = document.getElementById('setsInfoBox');
+      if (!isBestOfThreeActive) {
+        setsBox.classList.remove('visible');
+        return;
+      }
+
+      const nameA = cleanNameForDisplay(matchData.teamA);
+      const nameB = cleanNameForDisplay(matchData.teamB);
+
+      setsBox.innerHTML = `
+        <div class="sets-header-title">🏆 [First to Win 2 Sets]</div>
+        <div class="sets-scores-wrapper">
+          <div><strong>${nameA}:</strong> ${setsWonA} ${setsWonA === 1 ? 'Set' : 'Sets'}</div>
+          <div>|</div>
+          <div><strong>${nameB}:</strong> ${setsWonB} ${setsWonB === 1 ? 'Set' : 'Sets'}</div>
+        </div>
+      `;
+      setsBox.classList.add('visible');
     }
 
     function updateCourtState(data) {
@@ -506,15 +541,13 @@
       
       const isFinal = isMatchFinals();
       const toggleContainer = document.getElementById('formatToggleContainer');
-      const setsBox = document.getElementById('setsInfoBox');
 
       if (isFinal) {
         toggleContainer.classList.add('visible');
       } else {
         toggleContainer.classList.remove('visible');
-        isBestOfThreeActive = false; // Reset if not finals
+        isBestOfThreeActive = false;
         document.getElementById('bestOfThreeToggle').checked = false;
-        setsBox.classList.remove('visible');
       }
 
       const maxLimit = getMaxScoreLimit();
@@ -534,19 +567,15 @@
 
       document.getElementById('btnAddA').disabled = court.scoreA >= maxLimit;
       document.getElementById('btnAddB').disabled = court.scoreB >= maxLimit;
+
+      renderSetsDisplay();
     }
 
     function toggleBestOfThree() {
       isBestOfThreeActive = document.getElementById('bestOfThreeToggle').checked;
-      const setsBox = document.getElementById('setsInfoBox');
-      
       if (isBestOfThreeActive) {
         setsWonA = 0;
         setsWonB = 0;
-        setsBox.classList.add('visible');
-        setsBox.innerText = `Current Sets: Team A (${setsWonA}) - Team B (${setsWonB}) [First to win 2 sets]`;
-      } else {
-        setsBox.classList.remove('visible');
       }
       updateCourtState(globalTournamentData);
     }
@@ -595,13 +624,14 @@
         const tempSets = setsWonA;
         setsWonA = setsWonB;
         setsWonB = tempSets;
-        document.getElementById('setsInfoBox').innerText = `Current Sets: Team A (${setsWonA}) - Team B (${setsWonB}) [First to win 2 sets]`;
       }
 
       document.getElementById('teamAName').innerText = formatName(matchData.teamA);
       document.getElementById('teamBName').innerText = formatName(matchData.teamB);
       document.getElementById('scoreA').innerText = matchData.scoreA;
       document.getElementById('scoreB').innerText = matchData.scoreB;
+
+      renderSetsDisplay();
 
       socket.emit('swapTeams', { 
         courtId,
@@ -676,22 +706,19 @@
       const nameB = cleanNameForDisplay(matchData.teamB);
 
       if (isBestOfThreeActive) {
-        // Best of 3 validation: Check if a set was won (someone reached maxLimit)
         if (scoreA < maxLimit && scoreB < maxLimit) {
           alert(`⚠️ Set incomplete!\n\nThis set requires ${maxLimit} points. Neither team has reached ${maxLimit} yet.`);
           return;
         }
 
-        // Increment set winner
         if (scoreA > scoreB) setsWonA++;
         else if (scoreB > scoreA) setsWonB++;
 
-        document.getElementById('setsInfoBox').innerText = `Current Sets: Team A (${setsWonA}) - Team B (${setsWonB}) [First to win 2 sets]`;
+        renderSetsDisplay();
 
-        // Check if match is fully won (2 sets won)
         if (setsWonA < 2 && setsWonB < 2) {
-          alert(`Set finished! Score recorded.\n\nMoving to next set. Current Sets — Team A: ${setsWonA}, Team B: ${setsWonB}. Resetting score for next set.`);
-          // Reset scores for next set
+          alert(`Set finished! Score recorded.\n\nMoving to next set. Current Sets — ${nameA}: ${setsWonA}, ${nameB}: ${setsWonB}.\n\nResetting court scores for next set.`);
+          
           matchData.scoreA = 0;
           matchData.scoreB = 0;
           document.getElementById('scoreA').innerText = 0;
@@ -699,10 +726,9 @@
           document.getElementById('btnAddA').disabled = false;
           document.getElementById('btnAddB').disabled = false;
           socket.emit('updateScore', { courtId, scoreA: 0, scoreB: 0 });
-          return; // Stop final submission until 2 sets are won
+          return;
         }
       } else {
-        // Standard single game validation
         if (scoreA < maxLimit && scoreB < maxLimit) {
           alert(`⚠️ Cannot submit match yet!\n\nThis is a ${maxLimit}-point match. Neither team has reached ${maxLimit} points yet.`);
           return;
