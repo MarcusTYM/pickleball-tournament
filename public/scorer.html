@@ -56,6 +56,19 @@
       letter-spacing: -0.5px;
     }
 
+    .stage-badge {
+      display: inline-block;
+      font-size: 13px;
+      font-weight: 800;
+      color: #ffffff;
+      background: #2b374e;
+      padding: 4px 12px;
+      border-radius: 12px;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
     .timer-display {
       font-size: 24px;
       font-weight: 800;
@@ -133,6 +146,10 @@
       border: none;
       border-radius: 8px;
       cursor: pointer;
+    }
+    .btn-score-add:disabled {
+      background: #94a3b8;
+      cursor: not-allowed;
     }
     .btn-score-sub {
       flex: 1;
@@ -257,7 +274,10 @@
 
   <div class="header-status-box">
     <div class="court-title" id="courtTitle">Court 4 - Live Match</div>
-    <div class="timer-display" id="timerDisplay">⏱ 00:00</div>
+    <div class="stage-badge" id="stageBadge">Round Robin Stage</div>
+    <div>
+      <div class="timer-display" id="timerDisplay">⏱ 00:00</div>
+    </div>
   </div>
 
   <div class="control-actions">
@@ -270,7 +290,7 @@
       <div class="team-name" id="teamAName">Team A</div>
       <div class="score-value" id="scoreA">0</div>
       <div class="btn-score-group">
-        <button class="btn-score-add" onclick="updateScore('A', 1)">+1</button>
+        <button class="btn-score-add" id="btnAddA" onclick="updateScore('A', 1)">+1</button>
         <button class="btn-score-sub" onclick="updateScore('A', -1)">-1</button>
       </div>
     </div>
@@ -279,7 +299,7 @@
       <div class="team-name" id="teamBName">Team B</div>
       <div class="score-value" id="scoreB">0</div>
       <div class="btn-score-group">
-        <button class="btn-score-add" onclick="updateScore('B', 1)">+1</button>
+        <button class="btn-score-add" id="btnAddB" onclick="updateScore('B', 1)">+1</button>
         <button class="btn-score-sub" onclick="updateScore('B', -1)">-1</button>
       </div>
     </div>
@@ -314,6 +334,7 @@
       scoreB: 0,
       teamA: '',
       teamB: '',
+      roundName: '',
       startedAt: null,
       elapsedTime: 0,
       isPaused: false
@@ -342,27 +363,56 @@
     socket.on('initData', data => updateCourtState(data));
     socket.on('stateUpdated', data => updateCourtState(data));
 
+    function getMaxScoreLimit() {
+      const rName = (matchData.roundName || '').toLowerCase();
+      // If it's a Final match or Knockout final, allow up to 21 points, otherwise 15 for Round Robin
+      if (rName.includes('final') || rName.includes('championship')) {
+        return 21;
+      }
+      return 15;
+    }
+
     function updateCourtState(data) {
       if (!data || !data.activeCourts || !data.activeCourts[courtId]) return;
       const court = data.activeCourts[courtId];
       
       matchData = { ...court };
       
+      const maxLimit = getMaxScoreLimit();
+      const stageText = maxLimit === 21 ? 'Finals Stage (Max 21 Pts)' : 'Round Robin Stage (Max 15 Pts)';
+
       document.getElementById('courtTitle').innerText = `Court ${courtId} - Live Match`;
+      document.getElementById('stageBadge').innerText = stageText;
       document.getElementById('teamAName').innerText = formatName(court.teamA);
       document.getElementById('teamBName').innerText = formatName(court.teamB);
       document.getElementById('scoreA').innerText = court.scoreA;
       document.getElementById('scoreB').innerText = court.scoreB;
+
+      // Check button states based on max limits
+      document.getElementById('btnAddA').disabled = court.scoreA >= maxLimit;
+      document.getElementById('btnAddB').disabled = court.scoreB >= maxLimit;
     }
 
     function updateScore(team, delta) {
+      const maxLimit = getMaxScoreLimit();
+
       if (team === 'A') {
-        matchData.scoreA = Math.max(0, matchData.scoreA + delta);
-        document.getElementById('scoreA').innerText = matchData.scoreA;
+        const newScore = matchData.scoreA + delta;
+        if (newScore >= 0 && newScore <= maxLimit) {
+          matchData.scoreA = newScore;
+          document.getElementById('scoreA').innerText = matchData.scoreA;
+        }
       } else {
-        matchData.scoreB = Math.max(0, matchData.scoreB + delta);
-        document.getElementById('scoreB').innerText = matchData.scoreB;
+        const newScore = matchData.scoreB + delta;
+        if (newScore >= 0 && newScore <= maxLimit) {
+          matchData.scoreB = newScore;
+          document.getElementById('scoreB').innerText = matchData.scoreB;
+        }
       }
+
+      // Update button disabled states dynamically
+      document.getElementById('btnAddA').disabled = matchData.scoreA >= maxLimit;
+      document.getElementById('btnAddB').disabled = matchData.scoreB >= maxLimit;
 
       socket.emit('updateScore', {
         courtId,
