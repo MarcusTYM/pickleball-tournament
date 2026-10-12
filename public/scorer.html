@@ -335,6 +335,8 @@
       teamA: '',
       teamB: '',
       roundName: '',
+      stage: '',
+      matchType: '',
       startedAt: null,
       elapsedTime: 0,
       isPaused: false
@@ -364,12 +366,19 @@
     socket.on('stateUpdated', data => updateCourtState(data));
 
     function getMaxScoreLimit() {
-      const rName = (matchData.roundName || '').toLowerCase();
-      // If it's a Final match or Knockout final, allow up to 21 points, otherwise 15 for Round Robin
-      if (rName.includes('final') || rName.includes('championship')) {
-        return 21;
-      }
-      return 15;
+      const rName = (
+        matchData.roundName || 
+        matchData.stage || 
+        matchData.matchType || 
+        matchData.type || 
+        matchData.round || 
+        ''
+      ).toLowerCase();
+
+      // Only official championship / 1st-2nd finals match goes to 21 points
+      const isFinalsMatch = rName.includes('final') && (rName.includes('1st') || rName.includes('2nd') || rName.includes('championship'));
+
+      return isFinalsMatch ? 21 : 15;
     }
 
     function updateCourtState(data) {
@@ -379,7 +388,7 @@
       matchData = { ...court };
       
       const maxLimit = getMaxScoreLimit();
-      const stageText = maxLimit === 21 ? 'Finals Stage (Max 21 Pts)' : 'Round Robin Stage (Max 15 Pts)';
+      const stageText = maxLimit === 21 ? 'Finals Stage (Max 21 Pts)' : 'Round Robin / Playoff Stage (Max 15 Pts)';
 
       document.getElementById('courtTitle').innerText = `Court ${courtId} - Live Match`;
       document.getElementById('stageBadge').innerText = stageText;
@@ -388,7 +397,6 @@
       document.getElementById('scoreA').innerText = court.scoreA;
       document.getElementById('scoreB').innerText = court.scoreB;
 
-      // Check button states based on max limits
       document.getElementById('btnAddA').disabled = court.scoreA >= maxLimit;
       document.getElementById('btnAddB').disabled = court.scoreB >= maxLimit;
     }
@@ -410,7 +418,6 @@
         }
       }
 
-      // Update button disabled states dynamically
       document.getElementById('btnAddA').disabled = matchData.scoreA >= maxLimit;
       document.getElementById('btnAddB').disabled = matchData.scoreB >= maxLimit;
 
