@@ -375,8 +375,16 @@
         ''
       ).toLowerCase();
 
-      // Only official championship / 1st-2nd finals match goes to 21 points
-      const isFinalsMatch = rName.includes('final') && (rName.includes('1st') || rName.includes('2nd') || rName.includes('championship'));
+      const teamA = (matchData.teamA || '').toLowerCase();
+      const teamB = (matchData.teamB || '').toLowerCase();
+
+      // Check all possible identifiers for the Finals match
+      const isFinalsMatch = 
+        rName.includes('final') || 
+        teamA.includes('winner sf') || 
+        teamB.includes('winner sf') ||
+        teamA.includes('1st') || 
+        teamB.includes('1st');
 
       return isFinalsMatch ? 21 : 15;
     }
