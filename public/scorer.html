@@ -80,6 +80,69 @@
       border: 1px solid #bae6fd;
     }
 
+    /* FORMAT TOGGLE CONTAINER (ONLY SHOWS FOR FINALS) */
+    .format-toggle-container {
+      display: none;
+      background: #fef3c7;
+      border: 1.5px solid #f59e0b;
+      padding: 10px 16px;
+      border-radius: 10px;
+      margin-bottom: 16px;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+    }
+    .format-toggle-container.visible {
+      display: flex;
+    }
+    .format-label {
+      font-size: 13px;
+      font-weight: 800;
+      color: #b45309;
+      text-transform: uppercase;
+    }
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 48px;
+      height: 24px;
+    }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute; cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #cbd5e1;
+      transition: .3s;
+      border-radius: 24px;
+    }
+    .slider:before {
+      position: absolute; content: "";
+      height: 18px; width: 18px;
+      left: 3px; bottom: 3px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+    }
+    input:checked + .slider { background-color: #f59e0b; }
+    input:checked + .slider:before { transform: translateX(24px); }
+
+    /* SET STATUS DISPLAY */
+    .sets-info-box {
+      display: none;
+      font-size: 14px;
+      font-weight: 800;
+      color: #b45309;
+      background: #fffbeb;
+      padding: 6px;
+      border-radius: 6px;
+      margin-bottom: 12px;
+      text-align: center;
+      border: 1px dashed #fde68a;
+    }
+    .sets-info-box.visible {
+      display: block;
+    }
+
     .control-actions {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -204,12 +267,9 @@
       margin: 20px auto;
       cursor: pointer;
     }
-    .coin-wrapper.locked {
-      cursor: not-allowed;
-    }
+    .coin-wrapper.locked { cursor: not-allowed; }
     .coin {
-      width: 100%;
-      height: 100%;
+      width: 100%; height: 100%;
       border-radius: 50%;
       position: relative;
       transform-style: preserve-3d;
@@ -275,10 +335,22 @@
   <div class="header-status-box">
     <div class="court-title" id="courtTitle">Court 4 - Live Match</div>
     <div class="stage-badge" id="stageBadge">Round Robin Stage</div>
+    
+    <!-- ONLY APPEARS FOR FINALS -->
+    <div class="format-toggle-container" id="formatToggleContainer">
+      <span class="format-label">🏆 Best of 3 Sets Mode</span>
+      <label class="switch">
+        <input type="checkbox" id="bestOfThreeToggle" onchange="toggleBestOfThree()">
+        <span class="slider"></span>
+      </label>
+    </div>
+
     <div>
       <div class="timer-display" id="timerDisplay">⏱ 00:00</div>
     </div>
   </div>
+
+  <div class="sets-info-box" id="setsInfoBox">Current Sets: Team A (0) - Team B (0) [First to win 2 sets]</div>
 
   <div class="control-actions">
     <button class="btn-action btn-coin" onclick="openCoinModal()">🪙 Coin Toss</button>
@@ -305,7 +377,7 @@
     </div>
   </div>
 
-  <button class="btn-submit" onclick="finishMatch()">🏁 Finish Match & Submit Score</button>
+  <button class="btn-submit" id="btnSubmitMatch" onclick="finishMatch()">🏁 Finish Match & Submit Score</button>
 
   <!-- COIN TOSS MODAL -->
   <div class="modal-overlay" id="coinModal">
@@ -343,6 +415,11 @@
       isPaused: false
     };
 
+    // Best of 3 sets tracker state
+    let isBestOfThreeActive = false;
+    let setsWonA = 0;
+    let setsWonB = 0;
+
     function formatName(name) {
       if (!name) return '';
       if (name.includes('/')) {
@@ -373,7 +450,7 @@
       updateCourtState(data);
     });
 
-    function getMaxScoreLimit() {
+    function isMatchFinals() {
       if (globalTournamentData) {
         const tournament = globalTournamentData.tournament || globalTournamentData;
         const knockout = tournament.knockout;
@@ -393,44 +470,32 @@
 
           if (foundMatch) {
             const mLabel = (foundMatch.matchType || foundMatch.roundName || foundMatch.name || foundMatch.stage || '').toLowerCase();
-            if (mLabel.includes('final') && !mLabel.includes('3rd')) {
-              return 21;
-            }
+            if (mLabel.includes('final') && !mLabel.includes('3rd')) return true;
           }
 
-          const lastKnockoutMatch = kMatches[kMatches.length - 1];
-          if (lastKnockoutMatch) {
-            const lA = (lastKnockoutMatch.teamA || '').toLowerCase();
-            const lB = (lastKnockoutMatch.teamB || '').toLowerCase();
+          const lastMatch = kMatches[kMatches.length - 1];
+          if (lastMatch) {
+            const lA = (lastMatch.teamA || '').toLowerCase();
+            const lB = (lastMatch.teamB || '').toLowerCase();
             if (lA && lB && currentA && currentB) {
               if ((lA.includes(currentA) || currentA.includes(lA)) && (lB.includes(currentB) || currentB.includes(lB))) {
-                return 21;
+                return true;
               }
             }
           }
         }
       }
 
-      const rName = (
-        matchData.roundName || 
-        matchData.stage || 
-        matchData.matchType || 
-        matchData.type || 
-        matchData.round || 
-        ''
-      ).toLowerCase();
-
+      const rName = (matchData.roundName || matchData.stage || matchData.matchType || matchData.type || matchData.round || '').toLowerCase();
       const teamA = (matchData.teamA || '').toLowerCase();
       const teamB = (matchData.teamB || '').toLowerCase();
 
-      const isFinalsMatch = 
-        (rName.includes('final') && !rName.includes('3rd')) || 
-        teamA.includes('winner sf') || 
-        teamB.includes('winner sf') ||
-        teamA.includes('1st') || 
-        teamB.includes('1st');
+      return (rName.includes('final') && !rName.includes('3rd')) || teamA.includes('winner sf') || teamB.includes('winner sf') || teamA.includes('1st') || teamB.includes('1st');
+    }
 
-      return isFinalsMatch ? 21 : 15;
+    function getMaxScoreLimit() {
+      // Finals always use 21 points cap per set (or single game)
+      return isMatchFinals() ? 21 : 15;
     }
 
     function updateCourtState(data) {
@@ -439,8 +504,26 @@
       
       matchData = { ...court };
       
+      const isFinal = isMatchFinals();
+      const toggleContainer = document.getElementById('formatToggleContainer');
+      const setsBox = document.getElementById('setsInfoBox');
+
+      if (isFinal) {
+        toggleContainer.classList.add('visible');
+      } else {
+        toggleContainer.classList.remove('visible');
+        isBestOfThreeActive = false; // Reset if not finals
+        document.getElementById('bestOfThreeToggle').checked = false;
+        setsBox.classList.remove('visible');
+      }
+
       const maxLimit = getMaxScoreLimit();
-      const stageText = maxLimit === 21 ? 'Finals Stage (Max 21 Pts)' : 'Round Robin / Playoff Stage (Max 15 Pts)';
+      let stageText = '';
+      if (isFinal) {
+        stageText = isBestOfThreeActive ? 'Finals Stage (Best of 3 Sets - 21 Pts)' : 'Finals Stage (Single Game - 21 Pts)';
+      } else {
+        stageText = 'Round Robin / Playoff Stage (Max 15 Pts)';
+      }
 
       document.getElementById('courtTitle').innerText = `Court ${courtId} - Live Match`;
       document.getElementById('stageBadge').innerText = stageText;
@@ -451,6 +534,21 @@
 
       document.getElementById('btnAddA').disabled = court.scoreA >= maxLimit;
       document.getElementById('btnAddB').disabled = court.scoreB >= maxLimit;
+    }
+
+    function toggleBestOfThree() {
+      isBestOfThreeActive = document.getElementById('bestOfThreeToggle').checked;
+      const setsBox = document.getElementById('setsInfoBox');
+      
+      if (isBestOfThreeActive) {
+        setsWonA = 0;
+        setsWonB = 0;
+        setsBox.classList.add('visible');
+        setsBox.innerText = `Current Sets: Team A (${setsWonA}) - Team B (${setsWonB}) [First to win 2 sets]`;
+      } else {
+        setsBox.classList.remove('visible');
+      }
+      updateCourtState(globalTournamentData);
     }
 
     function updateScore(team, delta) {
@@ -492,6 +590,13 @@
       const tempTeamAId = matchData.teamAId;
       matchData.teamAId = matchData.teamBId;
       matchData.teamBId = tempTeamAId;
+
+      if (isBestOfThreeActive) {
+        const tempSets = setsWonA;
+        setsWonA = setsWonB;
+        setsWonB = tempSets;
+        document.getElementById('setsInfoBox').innerText = `Current Sets: Team A (${setsWonA}) - Team B (${setsWonB}) [First to win 2 sets]`;
+      }
 
       document.getElementById('teamAName').innerText = formatName(matchData.teamA);
       document.getElementById('teamBName').innerText = formatName(matchData.teamB);
@@ -562,38 +667,59 @@
       document.getElementById('coinModal').style.display = 'none';
     }
 
-    /* SUBMIT WITH STAGE-AWARE VALIDATION CHECK */
+    /* SUBMIT WITH VALIDATION & SET-PLAY SUPPORT */
     function finishMatch() {
       const maxLimit = getMaxScoreLimit();
       const scoreA = Number(matchData.scoreA || 0);
       const scoreB = Number(matchData.scoreB || 0);
-
-      // Prevent submission if target score has not been reached
-      if (scoreA < maxLimit && scoreB < maxLimit) {
-        alert(
-          `⚠️ Cannot submit match yet!\n\n` +
-          `This is a ${maxLimit}-point match. Neither team has reached ${maxLimit} points yet (Current score: ${scoreA} - ${scoreB}).\n\n` +
-          `Please continue until a team reaches ${maxLimit} points.`
-        );
-        return;
-      }
-
       const nameA = cleanNameForDisplay(matchData.teamA);
       const nameB = cleanNameForDisplay(matchData.teamB);
 
-      let winnerText = '';
-      if (scoreA > scoreB) {
-        winnerText = `Winner: ${nameA}`;
-      } else if (scoreB > scoreA) {
-        winnerText = `Winner: ${nameB}`;
+      if (isBestOfThreeActive) {
+        // Best of 3 validation: Check if a set was won (someone reached maxLimit)
+        if (scoreA < maxLimit && scoreB < maxLimit) {
+          alert(`⚠️ Set incomplete!\n\nThis set requires ${maxLimit} points. Neither team has reached ${maxLimit} yet.`);
+          return;
+        }
+
+        // Increment set winner
+        if (scoreA > scoreB) setsWonA++;
+        else if (scoreB > scoreA) setsWonB++;
+
+        document.getElementById('setsInfoBox').innerText = `Current Sets: Team A (${setsWonA}) - Team B (${setsWonB}) [First to win 2 sets]`;
+
+        // Check if match is fully won (2 sets won)
+        if (setsWonA < 2 && setsWonB < 2) {
+          alert(`Set finished! Score recorded.\n\nMoving to next set. Current Sets — Team A: ${setsWonA}, Team B: ${setsWonB}. Resetting score for next set.`);
+          // Reset scores for next set
+          matchData.scoreA = 0;
+          matchData.scoreB = 0;
+          document.getElementById('scoreA').innerText = 0;
+          document.getElementById('scoreB').innerText = 0;
+          document.getElementById('btnAddA').disabled = false;
+          document.getElementById('btnAddB').disabled = false;
+          socket.emit('updateScore', { courtId, scoreA: 0, scoreB: 0 });
+          return; // Stop final submission until 2 sets are won
+        }
       } else {
-        winnerText = `Result: DRAW`;
+        // Standard single game validation
+        if (scoreA < maxLimit && scoreB < maxLimit) {
+          alert(`⚠️ Cannot submit match yet!\n\nThis is a ${maxLimit}-point match. Neither team has reached ${maxLimit} points yet.`);
+          return;
+        }
+      }
+
+      let winnerText = '';
+      if (scoreA > scoreB || setsWonA >= 2) {
+        winnerText = `Winner: ${nameA}`;
+      } else {
+        winnerText = `Winner: ${nameB}`;
       }
 
       const summaryMessage = 
         `MATCH SUMMARY (Court ${courtId}):\n\n` +
-        `• ${nameA}: ${scoreA}\n` +
-        `• ${nameB}: ${scoreB}\n\n` +
+        `• ${nameA}: ${scoreA} ${isBestOfThreeActive ? '(Sets won: ' + setsWonA + ')' : ''}\n` +
+        `• ${nameB}: ${scoreB} ${isBestOfThreeActive ? '(Sets won: ' + setsWonB + ')' : ''}\n\n` +
         `${winnerText}\n\n` +
         `Are you sure you want to submit this final result?`;
 
