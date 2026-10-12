@@ -126,13 +126,13 @@
     input:checked + .slider { background-color: #f59e0b; }
     input:checked + .slider:before { transform: translateX(24px); }
 
-    /* IMPROVED SET STATUS DISPLAY */
+    /* MOBILE-FRIENDLY SET STATUS DISPLAY */
     .sets-info-box {
       display: none;
       background: #fffbeb;
       border: 1.5px dashed #f59e0b;
       border-radius: 12px;
-      padding: 12px 16px;
+      padding: 10px 12px;
       margin: 12px 0 16px 0;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
     }
@@ -146,38 +146,41 @@
       letter-spacing: 0.8px;
       color: #b45309;
       text-align: center;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
     .sets-scores-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      align-items: center;
+      gap: 8px;
+      align-items: stretch;
     }
     .set-team-column {
       background: #ffffff;
       border: 1px solid #fde68a;
       border-radius: 8px;
-      padding: 8px 10px;
+      padding: 6px 8px;
       text-align: center;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
     }
     .set-team-name {
-      font-size: 12px;
+      font-size: 10px;
       font-weight: 700;
       color: #451a03;
       margin-bottom: 4px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      line-height: 1.2;
+      word-break: break-word;
     }
     .set-score-pill {
       display: inline-block;
-      font-size: 13px;
+      font-size: 11px;
       font-weight: 900;
       color: #ffffff;
       background: #d97706;
-      padding: 3px 12px;
-      border-radius: 12px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      align-self: center;
     }
 
     .control-actions {
@@ -552,11 +555,11 @@
         <div class="sets-header-title">🏆 Best of 3 Sets Status (First to 2 Sets)</div>
         <div class="sets-scores-grid">
           <div class="set-team-column">
-            <div class="set-team-name" title="${nameA}">${nameA}</div>
+            <div class="set-team-name">${nameA}</div>
             <span class="set-score-pill">${setsWonA} ${setsWonA === 1 ? 'SET' : 'SETS'}</span>
           </div>
           <div class="set-team-column">
-            <div class="set-team-name" title="${nameB}">${nameB}</div>
+            <div class="set-team-name">${nameB}</div>
             <span class="set-score-pill">${setsWonB} ${setsWonB === 1 ? 'SET' : 'SETS'}</span>
           </div>
         </div>
