@@ -273,7 +273,7 @@
   </div>
 
   <div class="header-status-box">
-    <div class="court-title" id="courtTitle">Court 5 - Live Match</div>
+    <div class="court-title" id="courtTitle">Court 4 - Live Match</div>
     <div class="stage-badge" id="stageBadge">Round Robin Stage</div>
     <div>
       <div class="timer-display" id="timerDisplay">⏱ 00:00</div>
@@ -327,7 +327,7 @@
   <script>
     const socket = io();
     const urlParams = new URLSearchParams(window.location.search);
-    const courtId = urlParams.get('court') || '5';
+    const courtId = urlParams.get('court') || '4';
 
     let globalTournamentData = null;
     let matchData = {
@@ -374,14 +374,12 @@
     });
 
     function getMaxScoreLimit() {
-      // 1. Cross-check with global tournament knockout matches list
       if (globalTournamentData) {
         const tournament = globalTournamentData.tournament || globalTournamentData;
-        const knockout = tournament.knockout || (tournament.schedule ? null : null);
+        const knockout = tournament.knockout;
         
         if (knockout && knockout.matches && knockout.matches.length > 0) {
           const kMatches = knockout.matches;
-          // Find the match for this court or match where teamA & teamB match current court teams
           const currentA = cleanNameForDisplay(matchData.teamA).toLowerCase();
           const currentB = cleanNameForDisplay(matchData.teamB).toLowerCase();
 
@@ -395,13 +393,11 @@
 
           if (foundMatch) {
             const mLabel = (foundMatch.matchType || foundMatch.roundName || foundMatch.name || foundMatch.stage || '').toLowerCase();
-            // If it's the Finals match (and not 3rd place playoff)
             if (mLabel.includes('final') && !mLabel.includes('3rd')) {
               return 21;
             }
           }
 
-          // Fallback check: If it's the last match in the knockout list, it's Finals
           const lastKnockoutMatch = kMatches[kMatches.length - 1];
           if (lastKnockoutMatch) {
             const lA = (lastKnockoutMatch.teamA || '').toLowerCase();
@@ -415,7 +411,6 @@
         }
       }
 
-      // 2. Direct property inspection on matchData
       const rName = (
         matchData.roundName || 
         matchData.stage || 
@@ -567,12 +562,24 @@
       document.getElementById('coinModal').style.display = 'none';
     }
 
-    /* SUBMIT WITH RESULT SUMMARY PROMPT */
+    /* SUBMIT WITH STAGE-AWARE VALIDATION CHECK */
     function finishMatch() {
+      const maxLimit = getMaxScoreLimit();
+      const scoreA = Number(matchData.scoreA || 0);
+      const scoreB = Number(matchData.scoreB || 0);
+
+      // Prevent submission if target score has not been reached
+      if (scoreA < maxLimit && scoreB < maxLimit) {
+        alert(
+          `⚠️ Cannot submit match yet!\n\n` +
+          `This is a ${maxLimit}-point match. Neither team has reached ${maxLimit} points yet (Current score: ${scoreA} - ${scoreB}).\n\n` +
+          `Please continue until a team reaches ${maxLimit} points.`
+        );
+        return;
+      }
+
       const nameA = cleanNameForDisplay(matchData.teamA);
       const nameB = cleanNameForDisplay(matchData.teamB);
-      const scoreA = matchData.scoreA;
-      const scoreB = matchData.scoreB;
 
       let winnerText = '';
       if (scoreA > scoreB) {
@@ -588,7 +595,7 @@
         `• ${nameA}: ${scoreA}\n` +
         `• ${nameB}: ${scoreB}\n\n` +
         `${winnerText}\n\n` +
-        `Are you sure you want to submit this result?`;
+        `Are you sure you want to submit this final result?`;
 
       if (confirm(summaryMessage)) {
         socket.emit('finishMatch', { courtId, scoreA, scoreB });
