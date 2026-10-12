@@ -273,7 +273,7 @@
   </div>
 
   <div class="header-status-box">
-    <div class="court-title" id="courtTitle">Court 4 - Live Match</div>
+    <div class="court-title" id="courtTitle">Court 5 - Live Match</div>
     <div class="stage-badge" id="stageBadge">Round Robin Stage</div>
     <div>
       <div class="timer-display" id="timerDisplay">⏱ 00:00</div>
@@ -327,7 +327,7 @@
   <script>
     const socket = io();
     const urlParams = new URLSearchParams(window.location.search);
-    const courtId = urlParams.get('court') || '4';
+    const courtId = urlParams.get('court') || '5';
 
     let globalTournamentData = null;
     let matchData = {
@@ -374,20 +374,48 @@
     });
 
     function getMaxScoreLimit() {
-      // 1. Primary Check: Inspect global tournament knockout match definitions
-      if (globalTournamentData && globalTournamentData.tournament && globalTournamentData.tournament.knockout) {
-        const kMatches = globalTournamentData.tournament.knockout.matches || [];
-        const courtMatch = kMatches.find(m => String(m.court) === String(courtId) || String(m.courtId) === String(courtId));
+      // 1. Cross-check with global tournament knockout matches list
+      if (globalTournamentData) {
+        const tournament = globalTournamentData.tournament || globalTournamentData;
+        const knockout = tournament.knockout || (tournament.schedule ? null : null);
         
-        if (courtMatch) {
-          const matchLabel = (courtMatch.matchType || courtMatch.roundName || courtMatch.name || '').toLowerCase();
-          if (matchLabel.includes('final') && !matchLabel.includes('3rd')) {
-            return 21;
+        if (knockout && knockout.matches && knockout.matches.length > 0) {
+          const kMatches = knockout.matches;
+          // Find the match for this court or match where teamA & teamB match current court teams
+          const currentA = cleanNameForDisplay(matchData.teamA).toLowerCase();
+          const currentB = cleanNameForDisplay(matchData.teamB).toLowerCase();
+
+          const foundMatch = kMatches.find(m => {
+            const isCourt = String(m.court || m.courtId) === String(courtId);
+            const mA = (m.teamA || '').toLowerCase();
+            const mB = (m.teamB || '').toLowerCase();
+            const isTeamMatch = (mA && mB) && ((mA.includes(currentA) && mB.includes(currentB)) || (mA.includes(currentB) && mB.includes(currentA)));
+            return isCourt || isTeamMatch;
+          });
+
+          if (foundMatch) {
+            const mLabel = (foundMatch.matchType || foundMatch.roundName || foundMatch.name || foundMatch.stage || '').toLowerCase();
+            // If it's the Finals match (and not 3rd place playoff)
+            if (mLabel.includes('final') && !mLabel.includes('3rd')) {
+              return 21;
+            }
+          }
+
+          // Fallback check: If it's the last match in the knockout list, it's Finals
+          const lastKnockoutMatch = kMatches[kMatches.length - 1];
+          if (lastKnockoutMatch) {
+            const lA = (lastKnockoutMatch.teamA || '').toLowerCase();
+            const lB = (lastKnockoutMatch.teamB || '').toLowerCase();
+            if (lA && lB && currentA && currentB) {
+              if ((lA.includes(currentA) || currentA.includes(lA)) && (lB.includes(currentB) || currentB.includes(lB))) {
+                return 21;
+              }
+            }
           }
         }
       }
 
-      // 2. Secondary Fallback: Multi-property inspection
+      // 2. Direct property inspection on matchData
       const rName = (
         matchData.roundName || 
         matchData.stage || 
