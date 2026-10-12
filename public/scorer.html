@@ -329,6 +329,7 @@
     const urlParams = new URLSearchParams(window.location.search);
     const courtId = urlParams.get('court') || '4';
 
+    let globalTournamentData = null;
     let matchData = {
       scoreA: 0,
       scoreB: 0,
@@ -362,10 +363,31 @@
       return name.replace(/\n/g, ' ').trim();
     }
 
-    socket.on('initData', data => updateCourtState(data));
-    socket.on('stateUpdated', data => updateCourtState(data));
+    socket.on('initData', data => {
+      globalTournamentData = data;
+      updateCourtState(data);
+    });
+
+    socket.on('stateUpdated', data => {
+      globalTournamentData = data;
+      updateCourtState(data);
+    });
 
     function getMaxScoreLimit() {
+      // 1. Primary Check: Inspect global tournament knockout match definitions
+      if (globalTournamentData && globalTournamentData.tournament && globalTournamentData.tournament.knockout) {
+        const kMatches = globalTournamentData.tournament.knockout.matches || [];
+        const courtMatch = kMatches.find(m => String(m.court) === String(courtId) || String(m.courtId) === String(courtId));
+        
+        if (courtMatch) {
+          const matchLabel = (courtMatch.matchType || courtMatch.roundName || courtMatch.name || '').toLowerCase();
+          if (matchLabel.includes('final') && !matchLabel.includes('3rd')) {
+            return 21;
+          }
+        }
+      }
+
+      // 2. Secondary Fallback: Multi-property inspection
       const rName = (
         matchData.roundName || 
         matchData.stage || 
@@ -378,9 +400,8 @@
       const teamA = (matchData.teamA || '').toLowerCase();
       const teamB = (matchData.teamB || '').toLowerCase();
 
-      // Check all possible identifiers for the Finals match
       const isFinalsMatch = 
-        rName.includes('final') || 
+        (rName.includes('final') && !rName.includes('3rd')) || 
         teamA.includes('winner sf') || 
         teamB.includes('winner sf') ||
         teamA.includes('1st') || 
