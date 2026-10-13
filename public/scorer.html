@@ -455,9 +455,14 @@
       isPaused: false
     };
 
-    let isBestOfThreeActive = false;
-    let setsWonA = 0;
-    let setsWonB = 0;
+    // Browser localStorage keys to persist Best of 3 mode across refreshes
+    const storageKeyToggle = `pickleball_b3_toggle_${courtId}`;
+    const storageKeySetsA = `pickleball_sets_a_${courtId}`;
+    const storageKeySetsB = `pickleball_sets_b_${courtId}`;
+
+    let isBestOfThreeActive = localStorage.getItem(storageKeyToggle) === 'true';
+    let setsWonA = parseInt(localStorage.getItem(storageKeySetsA) || '0', 10);
+    let setsWonB = parseInt(localStorage.getItem(storageKeySetsB) || '0', 10);
 
     function formatName(name) {
       if (!name) return '';
@@ -575,13 +580,18 @@
       
       const isFinal = isMatchFinals();
       const toggleContainer = document.getElementById('formatToggleContainer');
+      const toggleEl = document.getElementById('bestOfThreeToggle');
 
       if (isFinal) {
         toggleContainer.classList.add('visible');
+        toggleEl.checked = isBestOfThreeActive; // Restore toggle UI state
       } else {
         toggleContainer.classList.remove('visible');
         isBestOfThreeActive = false;
-        document.getElementById('bestOfThreeToggle').checked = false;
+        toggleEl.checked = false;
+        localStorage.removeItem(storageKeyToggle);
+        localStorage.removeItem(storageKeySetsA);
+        localStorage.removeItem(storageKeySetsB);
       }
 
       const maxLimit = getMaxScoreLimit();
@@ -607,10 +617,20 @@
 
     function toggleBestOfThree() {
       isBestOfThreeActive = document.getElementById('bestOfThreeToggle').checked;
+      localStorage.setItem(storageKeyToggle, isBestOfThreeActive);
+
       if (isBestOfThreeActive) {
         setsWonA = 0;
         setsWonB = 0;
+      } else {
+        setsWonA = 0;
+        setsWonB = 0;
+        localStorage.removeItem(storageKeySetsA);
+        localStorage.removeItem(storageKeySetsB);
       }
+      localStorage.setItem(storageKeySetsA, setsWonA);
+      localStorage.setItem(storageKeySetsB, setsWonB);
+
       updateCourtState(globalTournamentData);
     }
 
@@ -658,6 +678,8 @@
         const tempSets = setsWonA;
         setsWonA = setsWonB;
         setsWonB = tempSets;
+        localStorage.setItem(storageKeySetsA, setsWonA);
+        localStorage.setItem(storageKeySetsB, setsWonB);
       }
 
       document.getElementById('teamAName').innerText = formatName(matchData.teamA);
@@ -748,6 +770,9 @@
         if (scoreA > scoreB) setsWonA++;
         else if (scoreB > scoreA) setsWonB++;
 
+        localStorage.setItem(storageKeySetsA, setsWonA);
+        localStorage.setItem(storageKeySetsB, setsWonB);
+
         renderSetsDisplay();
 
         if (setsWonA < 2 && setsWonB < 2) {
@@ -784,6 +809,11 @@
         `Are you sure you want to submit this final result?`;
 
       if (confirm(summaryMessage)) {
+        // Clear local storage for this court once the match is fully completed & submitted
+        localStorage.removeItem(storageKeyToggle);
+        localStorage.removeItem(storageKeySetsA);
+        localStorage.removeItem(storageKeySetsB);
+
         socket.emit('finishMatch', { courtId, scoreA, scoreB });
       }
     }
