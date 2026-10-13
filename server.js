@@ -77,7 +77,7 @@ async function loadInitialData() {
   }
 }
 
-function createTournament(numTeams, numGroups) {
+function createTournament(numTeams, numGroups, customTeams = []) {
   const groupNames = ['A', 'B', 'C', 'D', 'E', 'F'].slice(0, numGroups);
   const groups = {};
   groupNames.forEach(g => groups[g] = []);
@@ -85,9 +85,13 @@ function createTournament(numTeams, numGroups) {
   for (let i = 1; i <= numTeams; i++) {
     const groupIndex = (i - 1) % numGroups;
     const gName = groupNames[groupIndex];
+    
+    // Use custom team name if provided, otherwise fallback to placeholder
+    const teamName = (customTeams && customTeams[i - 1]) ? customTeams[i - 1] : `Pair ${gName}${groups[gName].length + 1}`;
+
     groups[gName].push({
       id: `${gName}${groups[gName].length + 1}`,
-      name: `Pair ${gName}${groups[gName].length + 1}`,
+      name: teamName,
       wins: 0, losses: 0, pointsFor: 0, pointsAgainst: 0, diff: 0
     });
   }
@@ -232,9 +236,9 @@ function generateKnockoutBracket() {
 io.on('connection', (socket) => {
   socket.emit('initData', { tournament, activeCourts });
 
-  socket.on('setupTournament', async ({ numTeams, numGroups }) => {
-    tournament = createTournament(numTeams, numGroups);
-    addLog('Tournament Setup', `Created with ${numTeams} teams across ${numGroups} groups.`);
+  socket.on('setupTournament', async ({ numTeams, numGroups, customTeams }) => {
+    tournament = createTournament(numTeams, numGroups, customTeams);
+    addLog('Tournament Setup', `Created with ${numTeams} teams across ${numGroups} groups (${customTeams ? customTeams.length : 0} custom names loaded).`);
     activeCourts = {
       4: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0, startedAt: null, isPaused: false, elapsedTime: 0 },
       5: { matchId: null, teamA: 'Empty', teamB: 'Empty', scoreA: 0, scoreB: 0, startedAt: null, isPaused: false, elapsedTime: 0 },
@@ -263,11 +267,10 @@ io.on('connection', (socket) => {
     }
   });
 
-socket.on('assignMatch', async (data) => {
+  socket.on('assignMatch', async (data) => {
     const matchId = data.matchId;
     const courtNum = data.courtId || data.courtNum;
 
-    // Prevent assigning if the target court already has an active match
     if (activeCourts[courtNum] && activeCourts[courtNum].matchId) {
       return socket.emit('errorMsg', `Court ${courtNum} is already in use!`);
     }
@@ -277,7 +280,6 @@ socket.on('assignMatch', async (data) => {
       match = tournament.knockout.matches.find(m => m.id === matchId);
     }
 
-    // Prevent assigning if match is already in progress or completed
     if (match && match.status !== 'IN_PROGRESS' && match.status !== 'COMPLETED') {
       match.status = 'IN_PROGRESS';
       match.court = courtNum;
