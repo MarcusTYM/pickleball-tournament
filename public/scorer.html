@@ -158,19 +158,20 @@
       background: #ffffff;
       border: 1px solid #fde68a;
       border-radius: 8px;
-      padding: 6px 8px;
+      padding: 8px 10px;
       text-align: center;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
     }
     .set-team-name {
-      font-size: 10px;
-      font-weight: 700;
+      font-size: 11px;
+      font-weight: 800;
       color: #451a03;
-      margin-bottom: 4px;
-      line-height: 1.2;
-      word-break: break-word;
+      margin-bottom: 6px;
+      line-height: 1.25;
+      white-space: pre-line;
+      overflow-wrap: anywhere;
     }
     .set-score-pill {
       display: inline-block;
@@ -178,9 +179,10 @@
       font-weight: 900;
       color: #ffffff;
       background: #d97706;
-      padding: 2px 8px;
+      padding: 3px 10px;
       border-radius: 10px;
       align-self: center;
+      margin-top: 4px;
     }
 
     .control-actions {
@@ -455,7 +457,7 @@
       isPaused: false
     };
 
-    // Browser localStorage keys to persist Best of 3 mode across refreshes
+    // Browser localStorage keys
     const storageKeyToggle = `pickleball_b3_toggle_${courtId}`;
     const storageKeySetsA = `pickleball_sets_a_${courtId}`;
     const storageKeySetsB = `pickleball_sets_b_${courtId}`;
@@ -553,18 +555,19 @@
         return;
       }
 
-      const nameA = cleanNameForDisplay(matchData.teamA);
-      const nameB = cleanNameForDisplay(matchData.teamB);
+      // Format team names into top/bottom without '/'
+      const formattedA = formatName(matchData.teamA);
+      const formattedB = formatName(matchData.teamB);
 
       setsBox.innerHTML = `
         <div class="sets-header-title">🏆 Best of 3 Sets Status (First to 2 Sets)</div>
         <div class="sets-scores-grid">
           <div class="set-team-column">
-            <div class="set-team-name">${nameA}</div>
+            <div class="set-team-name">${formattedA}</div>
             <span class="set-score-pill">${setsWonA} ${setsWonA === 1 ? 'SET' : 'SETS'}</span>
           </div>
           <div class="set-team-column">
-            <div class="set-team-name">${nameB}</div>
+            <div class="set-team-name">${formattedB}</div>
             <span class="set-score-pill">${setsWonB} ${setsWonB === 1 ? 'SET' : 'SETS'}</span>
           </div>
         </div>
@@ -584,7 +587,7 @@
 
       if (isFinal) {
         toggleContainer.classList.add('visible');
-        toggleEl.checked = isBestOfThreeActive; // Restore toggle UI state
+        toggleEl.checked = isBestOfThreeActive;
       } else {
         toggleContainer.classList.remove('visible');
         isBestOfThreeActive = false;
@@ -616,12 +619,26 @@
     }
 
     function toggleBestOfThree() {
-      isBestOfThreeActive = document.getElementById('bestOfThreeToggle').checked;
+      const toggleEl = document.getElementById('bestOfThreeToggle');
+      const newState = toggleEl.checked;
+
+      // Prevent accidental score wipe mid-match if sets were already won
+      if (!newState && (setsWonA > 0 || setsWonB > 0)) {
+        if (!confirm('⚠️ Are you sure you want to turn OFF Best of 3 mode?\n\nThis will reset recorded set scores.')) {
+          toggleEl.checked = true; // Revert toggle state
+          return;
+        }
+      }
+
+      isBestOfThreeActive = newState;
       localStorage.setItem(storageKeyToggle, isBestOfThreeActive);
 
       if (isBestOfThreeActive) {
-        setsWonA = 0;
-        setsWonB = 0;
+        // Retain current scores if previously toggled, otherwise reset
+        if (!localStorage.getItem(storageKeySetsA)) {
+          setsWonA = 0;
+          setsWonB = 0;
+        }
       } else {
         setsWonA = 0;
         setsWonB = 0;
@@ -809,7 +826,6 @@
         `Are you sure you want to submit this final result?`;
 
       if (confirm(summaryMessage)) {
-        // Clear local storage for this court once the match is fully completed & submitted
         localStorage.removeItem(storageKeyToggle);
         localStorage.removeItem(storageKeySetsA);
         localStorage.removeItem(storageKeySetsB);
