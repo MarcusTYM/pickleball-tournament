@@ -41,15 +41,15 @@
     </script>
 
     <style>
-        html, body {
-            height: 100%;
-            overflow: hidden;
-        }
-
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
             background-color: #0B1120;
             color: #F8FAFC;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            overflow-x: hidden;
         }
 
         .glass-panel {
@@ -66,11 +66,11 @@
         }
 
         .glow-lime {
-            box-shadow: 0 0 30px -5px rgba(204, 255, 0, 0.3);
+            box-shadow: 0 0 35px -5px rgba(204, 255, 0, 0.35);
         }
 
         .text-glow-lime {
-            text-shadow: 0 0 18px rgba(204, 255, 0, 0.6);
+            text-shadow: 0 0 20px rgba(204, 255, 0, 0.6);
         }
 
         .tab-active {
@@ -78,6 +78,17 @@
             color: #0B1120;
             font-weight: 800;
             box-shadow: 0 0 15px rgba(204, 255, 0, 0.4);
+        }
+
+        /* Fluid auto-scaling typography for 32" TV screens & mobile */
+        .fluid-title {
+            font-size: clamp(1.5rem, 3.5vw, 3.2rem);
+        }
+        .fluid-digit {
+            font-size: clamp(3rem, 9vw, 7.5rem);
+        }
+        .fluid-card {
+            padding: clamp(1rem, 2.5vw, 2.5rem);
         }
 
         ::-webkit-scrollbar {
@@ -95,7 +106,7 @@
         }
     </style>
 </head>
-<body class="h-screen flex flex-col justify-between selection:bg-brand-lime selection:text-brand-dark overflow-hidden">
+<body class="selection:bg-brand-lime selection:text-brand-dark">
 
     <!-- Ambient Glowing Background Grid & Effects -->
     <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
@@ -113,14 +124,14 @@
     </div>
 
     <!-- Top Navigation Header -->
-    <header class="relative z-20 px-4 py-3 sm:px-8 max-w-[90rem] mx-auto w-full flex items-center justify-between border-b border-white/10 gap-2 shrink-0">
+    <header class="relative z-20 px-4 py-3 sm:px-8 max-w-7xl mx-auto w-full flex items-center justify-between border-b border-white/10 gap-3">
         <div class="flex items-center gap-3 min-w-0">
             <div class="p-2 sm:p-3 bg-brand-lime/10 border border-brand-lime/40 rounded-2xl text-brand-lime flex items-center justify-center shrink-0">
-                <i data-lucide="package" class="w-5 h-5 sm:w-7 sm:h-7"></i>
+                <i data-lucide="package" class="w-6 h-6 sm:w-7 sm:h-7"></i>
             </div>
             <div class="min-w-0 flex-1">
-                <span class="text-[10px] sm:text-sm font-extrabold uppercase tracking-widest text-brand-lime block truncate">Sanmina Penang Plant 2</span>
-                <h1 class="font-outfit font-black text-sm sm:text-xl lg:text-2xl tracking-tight text-white truncate">
+                <span class="text-[10px] sm:text-xs font-extrabold uppercase tracking-widest text-brand-lime block truncate">Sanmina Penang Plant 2</span>
+                <h1 class="font-outfit font-black text-sm sm:text-lg lg:text-xl tracking-tight text-white truncate">
                     BLIND BOX <span class="text-brand-lime">CHALLENGE 2026</span>
                 </h1>
             </div>
@@ -154,26 +165,26 @@
     </header>
 
     <!-- Main Content Area -->
-    <main class="relative z-10 max-w-[90rem] mx-auto px-4 sm:px-8 flex-1 flex flex-col justify-evenly w-full min-h-0 py-3 sm:py-6">
+    <main class="relative z-10 max-w-7xl mx-auto px-4 sm:px-8 py-6 sm:py-10 flex-grow flex flex-col justify-center gap-6 sm:gap-8 w-full">
 
         <!-- Announcement Banner for Game Day -->
-        <div id="gameDayBanner" class="hidden glass-panel border-2 border-brand-lime glow-lime rounded-2xl p-4 text-center animate-bounce shrink-0">
-            <h2 class="font-outfit font-black text-2xl sm:text-4xl text-brand-lime tracking-wider uppercase">
+        <div id="gameDayBanner" class="hidden glass-panel border-2 border-brand-lime glow-lime rounded-3xl p-6 text-center animate-bounce">
+            <h2 class="font-outfit font-black text-2xl sm:text-4xl text-brand-lime tracking-wider uppercase mb-2">
                 🎁 IT'S GAME DAY! OPEN YOUR BLIND BOX! 🎁
             </h2>
             <p class="text-slate-200 text-sm sm:text-base">Check-in at G.O.A.T Pickle Club! Partner & Prizes are being revealed NOW!</p>
         </div>
 
         <!-- Banner Info -->
-        <div class="text-center space-y-1.5 sm:space-y-3 max-w-4xl mx-auto px-1 shrink-0">
-            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-red/20 border border-brand-red/40 text-white text-[10px] sm:text-sm font-bold uppercase tracking-widest max-w-full truncate">
+        <div class="text-center space-y-2 sm:space-y-3 max-w-4xl mx-auto px-1">
+            <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-brand-red/20 border border-brand-red/40 text-white text-xs sm:text-sm font-bold uppercase tracking-widest max-w-full truncate">
                 <span class="w-2 h-2 rounded-full bg-brand-red animate-ping shrink-0"></span>
                 <span id="eventTagline" class="truncate">Sanmina Penang Plant 2 Pickleball Club</span>
             </div>
-            <h2 id="displayEventTitle" class="font-outfit font-black text-2xl sm:text-4xl lg:text-5xl text-white tracking-tight leading-tight uppercase">
+            <h2 id="displayEventTitle" class="font-outfit font-black fluid-title text-white tracking-tight leading-tight uppercase">
                 PICKLEBALL BLIND BOX CHALLENGE 2026
             </h2>
-            <a id="displayVenue" href="https://maps.app.goo.gl/xLFJnchPnZgSTet68" target="_blank" rel="noopener noreferrer" class="text-slate-300 hover:text-brand-lime transition-colors text-xs sm:text-base lg:text-lg flex items-center justify-center gap-2 font-semibold group cursor-pointer">
+            <a id="displayVenue" href="https://maps.app.goo.gl/xLFJnchPnZgSTet68" target="_blank" rel="noopener noreferrer" class="text-slate-300 hover:text-brand-lime transition-colors text-sm sm:text-base lg:text-lg flex items-center justify-center gap-2 font-semibold group cursor-pointer">
                 <i data-lucide="map-pin" class="w-4 h-4 sm:w-5 sm:h-5 text-brand-lime shrink-0 group-hover:scale-110 transition-transform"></i>
                 <span class="underline underline-offset-4 decoration-brand-lime/40 group-hover:decoration-brand-lime">G.O.A.T Pickle Club - Sungai Pinang</span>
                 <i data-lucide="external-link" class="w-3.5 h-3.5 text-slate-400 group-hover:text-brand-lime transition-colors"></i>
@@ -181,54 +192,54 @@
         </div>
 
         <!-- TAB NAVIGATION SWITCHER -->
-        <div class="flex justify-center shrink-0 my-1">
-            <div class="p-1 sm:p-1.5 bg-slate-900/90 border border-white/10 rounded-2xl flex gap-1.5 max-w-md w-full">
-                <button id="tabCountdownBtn" onclick="switchTabUser('countdown')" class="tab-active flex-1 py-2 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-all">
+        <div class="flex justify-center my-2">
+            <div class="p-1.5 bg-slate-900/90 border border-white/10 rounded-2xl flex gap-1.5 max-w-md w-full">
+                <button id="tabCountdownBtn" onclick="switchTabUser('countdown')" class="tab-active flex-1 py-2 px-4 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all">
                     <i data-lucide="timer" class="w-4 h-4"></i>
                     <span>Countdown</span>
                 </button>
-                <button id="tabAgendaBtn" onclick="switchTabUser('agenda')" class="text-slate-400 hover:text-white flex-1 py-2 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-all">
+                <button id="tabAgendaBtn" onclick="switchTabUser('agenda')" class="text-slate-400 hover:text-white flex-1 py-2 px-4 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all">
                     <i data-lucide="calendar" class="w-4 h-4"></i>
                     <span>Schedule</span>
                 </button>
-                <button id="tabGuidelinesBtn" onclick="switchTabUser('guidelines')" class="text-slate-400 hover:text-white flex-1 py-2 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-all">
+                <button id="tabGuidelinesBtn" onclick="switchTabUser('guidelines')" class="text-slate-400 hover:text-white flex-1 py-2 px-4 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all">
                     <i data-lucide="shield-alert" class="w-4 h-4"></i>
                     <span>Details</span>
                 </button>
             </div>
         </div>
 
-        <!-- TAB 1: COUNTDOWN DISPLAY (Scaled up nicely for 32" TV & Desktop) -->
-        <div id="tabCountdown" class="space-y-3 sm:space-y-6 flex-1 flex flex-col justify-evenly">
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-6 max-w-6xl mx-auto w-full">
+        <!-- TAB 1: COUNTDOWN DISPLAY -->
+        <div id="tabCountdown" class="space-y-6">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 lg:gap-6 max-w-6xl mx-auto w-full">
                 
                 <!-- Days Card -->
-                <div class="glass-panel rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 text-center flex flex-col justify-center items-center relative overflow-hidden group border-t-4 border-t-brand-lime">
-                    <span id="days" class="font-outfit font-black text-5xl sm:text-7xl lg:text-8xl text-white tracking-tight text-glow-lime leading-none">00</span>
+                <div class="glass-panel rounded-3xl fluid-card text-center flex flex-col justify-center items-center relative overflow-hidden group border-t-4 border-t-brand-lime">
+                    <span id="days" class="font-outfit font-black fluid-digit text-white tracking-tight text-glow-lime leading-none">00</span>
                     <span class="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-400 mt-2 sm:mt-3 flex items-center gap-1.5">
                         <i data-lucide="calendar-days" class="w-4 h-4 text-brand-lime"></i> Days
                     </span>
                 </div>
 
                 <!-- Hours Card -->
-                <div class="glass-panel rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 text-center flex flex-col justify-center items-center relative overflow-hidden group border-t-4 border-t-brand-teal">
-                    <span id="hours" class="font-outfit font-black text-5xl sm:text-7xl lg:text-8xl text-white tracking-tight leading-none">00</span>
+                <div class="glass-panel rounded-3xl fluid-card text-center flex flex-col justify-center items-center relative overflow-hidden group border-t-4 border-t-brand-teal">
+                    <span id="hours" class="font-outfit font-black fluid-digit text-white tracking-tight leading-none">00</span>
                     <span class="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-400 mt-2 sm:mt-3 flex items-center gap-1.5">
                         <i data-lucide="clock" class="w-4 h-4 text-brand-teal"></i> Hours
                     </span>
                 </div>
 
                 <!-- Minutes Card -->
-                <div class="glass-panel rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 text-center flex flex-col justify-center items-center relative overflow-hidden group border-t-4 border-t-brand-lime">
-                    <span id="minutes" class="font-outfit font-black text-5xl sm:text-7xl lg:text-8xl text-white tracking-tight leading-none">00</span>
+                <div class="glass-panel rounded-3xl fluid-card text-center flex flex-col justify-center items-center relative overflow-hidden group border-t-4 border-t-brand-lime">
+                    <span id="minutes" class="font-outfit font-black fluid-digit text-white tracking-tight leading-none">00</span>
                     <span class="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-400 mt-2 sm:mt-3 flex items-center gap-1.5">
                         <i data-lucide="timer" class="w-4 h-4 text-brand-lime"></i> Mins
                     </span>
                 </div>
 
                 <!-- Seconds Card -->
-                <div class="glass-panel rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 text-center flex flex-col justify-center items-center relative overflow-hidden group border-t-4 border-t-brand-red">
-                    <span id="seconds" class="font-outfit font-black text-5xl sm:text-7xl lg:text-8xl text-brand-lime tracking-tight text-glow-lime leading-none">00</span>
+                <div class="glass-panel rounded-3xl fluid-card text-center flex flex-col justify-center items-center relative overflow-hidden group border-t-4 border-t-brand-red">
+                    <span id="seconds" class="font-outfit font-black fluid-digit text-brand-lime tracking-tight text-glow-lime leading-none">00</span>
                     <span class="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-400 mt-2 sm:mt-3 flex items-center gap-1.5">
                         <i data-lucide="zap" class="w-4 h-4 text-brand-red"></i> Secs
                     </span>
@@ -237,57 +248,57 @@
             </div>
 
             <!-- Hype Button -->
-            <div class="flex flex-col items-center justify-center shrink-0">
-                <button id="hypeBtn" onclick="triggerHype()" class="group relative w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-3.5 sm:px-12 sm:py-4 rounded-2xl bg-gradient-to-r from-brand-lime via-brand-teal to-brand-lime text-brand-dark font-outfit font-black text-base sm:text-xl uppercase tracking-wider shadow-lg active:scale-95 transition-all duration-200">
+            <div class="flex flex-col items-center justify-center my-3">
+                <button id="hypeBtn" onclick="triggerHype()" class="group relative w-full sm:w-auto inline-flex items-center justify-center gap-3 px-10 py-4 sm:px-14 sm:py-5 rounded-2xl bg-gradient-to-r from-brand-lime via-brand-teal to-brand-lime text-brand-dark font-outfit font-black text-base sm:text-xl uppercase tracking-wider shadow-lg active:scale-95 transition-all duration-200">
                     <i data-lucide="zap" class="w-5 h-5 fill-brand-dark group-hover:rotate-12 transition-transform"></i>
                     <span>SMASH IT! 🏓</span>
                 </button>
             </div>
 
             <!-- Quick Info Cards -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 max-w-5xl mx-auto w-full shrink-0">
-                <div class="glass-card rounded-2xl p-4 sm:p-5 flex items-center justify-between border-l-4 border-l-brand-lime">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-5xl mx-auto w-full">
+                <div class="glass-card rounded-2xl p-5 flex items-center justify-between border-l-4 border-l-brand-lime">
                     <div>
-                        <span class="text-[10px] sm:text-xs text-slate-400 uppercase font-bold">Event Date & Time</span>
-                        <h4 id="displayDateText" class="font-outfit font-bold text-sm sm:text-base lg:text-lg text-white">14th November 2026 (Saturday)</h4>
+                        <span class="text-xs text-slate-400 uppercase font-bold">Event Date & Time</span>
+                        <h4 id="displayDateText" class="font-outfit font-bold text-sm sm:text-lg text-white">14th November 2026 (Saturday)</h4>
                         <p id="displayTimeText" class="text-xs sm:text-sm text-brand-lime font-semibold">08:00 AM Check-in Starts</p>
                     </div>
-                    <i data-lucide="calendar" class="w-6 h-6 sm:w-8 sm:h-8 text-brand-lime/50 shrink-0 ml-3"></i>
+                    <i data-lucide="calendar" class="w-8 h-8 text-brand-lime/50 shrink-0 ml-3"></i>
                 </div>
 
-                <a href="https://maps.app.goo.gl/xLFJnchPnZgSTet68" target="_blank" rel="noopener noreferrer" class="glass-card rounded-2xl p-4 sm:p-5 flex items-center justify-between border-l-4 border-l-brand-teal hover:border-brand-lime transition-all hover:scale-[1.01] cursor-pointer group">
+                <a href="https://maps.app.goo.gl/xLFJnchPnZgSTet68" target="_blank" rel="noopener noreferrer" class="glass-card rounded-2xl p-5 flex items-center justify-between border-l-4 border-l-brand-teal hover:border-brand-lime transition-all hover:scale-[1.01] cursor-pointer group">
                     <div>
-                        <span class="text-[10px] sm:text-xs text-slate-400 uppercase font-bold flex items-center gap-1">
+                        <span class="text-xs text-slate-400 uppercase font-bold flex items-center gap-1">
                             Location <i data-lucide="external-link" class="w-3 h-3 text-brand-teal group-hover:text-brand-lime"></i>
                         </span>
-                        <h4 class="font-outfit font-bold text-sm sm:text-base lg:text-lg text-white group-hover:text-brand-lime transition-colors">G.O.A.T Pickle Club</h4>
+                        <h4 class="font-outfit font-bold text-sm sm:text-lg text-white group-hover:text-brand-lime transition-colors">G.O.A.T Pickle Club</h4>
                         <p class="text-xs sm:text-sm text-brand-teal font-semibold group-hover:text-brand-lime transition-colors">Sungai Pinang (Open in Google Maps 📍)</p>
                     </div>
-                    <div class="p-2 sm:p-2.5 rounded-xl bg-brand-teal/10 border border-brand-teal/30 group-hover:bg-brand-lime/20 group-hover:border-brand-lime/50 transition-all shrink-0 ml-3">
-                        <i data-lucide="map-pin" class="w-5 h-5 sm:w-6 sm:h-6 text-brand-teal group-hover:text-brand-lime transition-colors"></i>
+                    <div class="p-2.5 rounded-xl bg-brand-teal/10 border border-brand-teal/30 group-hover:bg-brand-lime/20 group-hover:border-brand-lime/50 transition-all shrink-0 ml-3">
+                        <i data-lucide="map-pin" class="w-6 h-6 text-brand-teal group-hover:text-brand-lime transition-colors"></i>
                     </div>
                 </a>
             </div>
         </div>
 
         <!-- TAB 2: EVENT SCHEDULE & AGENDA -->
-        <div id="tabAgenda" class="hidden max-w-5xl mx-auto w-full space-y-3 overflow-y-auto max-h-full py-1">
-            <div class="glass-panel rounded-3xl p-5 sm:p-6 space-y-3 border border-white/10">
-                <div class="flex items-center justify-between border-b border-white/10 pb-3 gap-2">
+        <div id="tabAgenda" class="hidden max-w-5xl mx-auto w-full space-y-4">
+            <div class="glass-panel rounded-3xl p-6 sm:p-8 space-y-4 border border-white/10">
+                <div class="flex items-center justify-between border-b border-white/10 pb-4 gap-2">
                     <div class="flex items-center gap-3">
                         <div class="p-2.5 bg-brand-lime/10 border border-brand-lime/30 rounded-xl text-brand-lime">
-                            <i data-lucide="clock" class="w-5 h-5 sm:w-6 sm:h-6"></i>
+                            <i data-lucide="clock" class="w-6 h-6"></i>
                         </div>
                         <div>
-                            <h3 class="font-outfit font-black text-base sm:text-xl text-white">EVENT SCHEDULE</h3>
+                            <h3 class="font-outfit font-black text-lg sm:text-2xl text-white">EVENT SCHEDULE</h3>
                             <p class="text-xs sm:text-sm text-slate-400">Please review and arrive early</p>
                         </div>
                     </div>
                     <span class="text-xs font-bold text-brand-lime bg-brand-lime/10 border border-brand-lime/30 px-3 py-1 rounded-full uppercase shrink-0">14 Nov 2026</span>
                 </div>
 
-                <div class="space-y-2 sm:space-y-2.5 text-sm sm:text-base">
-                    <div class="flex flex-row items-center justify-between p-3 sm:p-4 rounded-2xl bg-slate-900/70 border border-white/5 gap-2">
+                <div class="space-y-3 text-sm sm:text-base">
+                    <div class="flex flex-row items-center justify-between p-4 rounded-2xl bg-slate-900/70 border border-white/5 gap-2">
                         <div class="flex items-center gap-3 min-w-0">
                             <span class="w-3 h-3 rounded-full bg-brand-lime shrink-0"></span>
                             <span class="font-outfit font-bold text-white truncate">Arrival & Check-in</span>
@@ -295,7 +306,7 @@
                         <span class="px-3 py-1 rounded-xl bg-slate-800 text-brand-lime font-bold text-xs sm:text-sm shrink-0">8:00 AM – 8:30 AM</span>
                     </div>
 
-                    <div class="flex flex-row items-center justify-between p-3 sm:p-4 rounded-2xl bg-slate-900/70 border border-white/5 gap-2">
+                    <div class="flex flex-row items-center justify-between p-4 rounded-2xl bg-slate-900/70 border border-white/5 gap-2">
                         <div class="flex items-center gap-3 min-w-0">
                             <span class="w-3 h-3 rounded-full bg-brand-teal shrink-0"></span>
                             <span class="font-outfit font-bold text-white truncate">Warm-up & Briefing</span>
@@ -303,7 +314,7 @@
                         <span class="px-3 py-1 rounded-xl bg-slate-800 text-brand-teal font-bold text-xs sm:text-sm shrink-0">8:30 AM – 9:00 AM</span>
                     </div>
 
-                    <div class="flex flex-row items-center justify-between p-3 sm:p-4 rounded-2xl bg-slate-900/70 border border-white/5 gap-2">
+                    <div class="flex flex-row items-center justify-between p-4 rounded-2xl bg-slate-900/70 border border-white/5 gap-2">
                         <div class="flex items-center gap-3 min-w-0">
                             <span class="w-3 h-3 rounded-full bg-brand-accent shrink-0"></span>
                             <span class="font-outfit font-bold text-white truncate">Group Photo</span>
@@ -311,7 +322,7 @@
                         <span class="px-3 py-1 rounded-xl bg-slate-800 text-brand-accent font-bold text-xs sm:text-sm shrink-0">9:00 AM – 9:10 AM</span>
                     </div>
 
-                    <div class="flex flex-row items-center justify-between p-3 sm:p-4 rounded-2xl bg-brand-red/20 border-2 border-brand-red gap-2">
+                    <div class="flex flex-row items-center justify-between p-4 rounded-2xl bg-brand-red/20 border-2 border-brand-red gap-2">
                         <div class="flex items-center gap-3 min-w-0">
                             <span class="w-3 h-3 rounded-full bg-brand-red animate-ping shrink-0"></span>
                             <span class="font-outfit font-black text-white text-base sm:text-lg uppercase tracking-wide truncate">Matches Begin!</span>
@@ -319,7 +330,7 @@
                         <span class="px-3 py-1 rounded-xl bg-brand-red text-white font-black text-xs sm:text-sm shrink-0">9:10 AM</span>
                     </div>
 
-                    <div class="flex flex-row items-center justify-between p-3 sm:p-4 rounded-2xl bg-slate-900/70 border border-white/5 gap-2">
+                    <div class="flex flex-row items-center justify-between p-4 rounded-2xl bg-slate-900/70 border border-white/5 gap-2">
                         <div class="flex items-center gap-3 min-w-0">
                             <span class="w-3 h-3 rounded-full bg-brand-teal shrink-0"></span>
                             <span class="font-outfit font-bold text-white truncate">Knockout & Finals</span>
@@ -327,7 +338,7 @@
                         <span class="px-3 py-1 rounded-xl bg-slate-800 text-brand-teal font-bold text-xs sm:text-sm shrink-0">12:00 PM – 1:00 PM</span>
                     </div>
 
-                    <div class="flex flex-row items-center justify-between p-3 sm:p-4 rounded-2xl bg-slate-900/70 border border-white/5 gap-2">
+                    <div class="flex flex-row items-center justify-between p-4 rounded-2xl bg-slate-900/70 border border-white/5 gap-2">
                         <div class="flex items-center gap-3 min-w-0">
                             <span class="w-3 h-3 rounded-full bg-brand-lime shrink-0"></span>
                             <span class="font-outfit font-bold text-white truncate">Prize Ceremony</span>
@@ -340,12 +351,12 @@
         </div>
 
         <!-- TAB 3: GUIDELINES & BLIND BOX FORMAT -->
-        <div id="tabGuidelines" class="hidden max-w-5xl mx-auto w-full space-y-3 overflow-y-auto max-h-full py-1">
-            <div class="glass-panel rounded-3xl p-5 sm:p-6 border-2 border-brand-lime glow-lime space-y-2 text-center relative overflow-hidden">
-                <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-lime/20 text-brand-lime text-xs sm:text-sm font-bold uppercase tracking-widest">
+        <div id="tabGuidelines" class="hidden max-w-5xl mx-auto w-full space-y-4">
+            <div class="glass-panel rounded-3xl p-6 sm:p-8 border-2 border-brand-lime glow-lime space-y-2 text-center relative overflow-hidden">
+                <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-brand-lime/20 text-brand-lime text-xs sm:text-sm font-bold uppercase tracking-widest">
                     🎁 Blind Box Format
                 </div>
-                <h3 class="font-outfit font-black text-lg sm:text-2xl text-white uppercase tracking-tight">
+                <h3 class="font-outfit font-black text-xl sm:text-3xl text-white uppercase tracking-tight">
                     PARTNER & PRIZE REVEALED ON EVENT DAY!
                 </h3>
                 <p class="text-slate-300 text-sm sm:text-base leading-relaxed max-w-2xl mx-auto">
@@ -353,7 +364,7 @@
                 </p>
             </div>
 
-            <div class="glass-card rounded-2xl p-4 sm:p-5 border-l-4 border-l-brand-red space-y-1 text-sm sm:text-base">
+            <div class="glass-card rounded-2xl p-5 border-l-4 border-l-brand-red space-y-1.5 text-sm sm:text-base">
                 <div class="flex items-center gap-2 text-brand-red font-outfit font-bold text-base sm:text-lg">
                     <i data-lucide="alarm-clock" class="w-5 h-5"></i>
                     <h4>Arrival Note</h4>
@@ -363,7 +374,7 @@
                 </p>
             </div>
 
-            <div class="glass-card rounded-2xl p-4 sm:p-5 border-l-4 border-l-brand-teal space-y-1 text-sm sm:text-base">
+            <div class="glass-card rounded-2xl p-5 border-l-4 border-l-brand-teal space-y-1.5 text-sm sm:text-base">
                 <div class="flex items-center gap-2 text-brand-teal font-outfit font-bold text-base sm:text-lg">
                     <i data-lucide="shield-check" class="w-5 h-5"></i>
                     <h4>Friendly Reminder & Safety Disclaimer</h4>
@@ -378,7 +389,7 @@
     </main>
 
     <!-- Toast Notification -->
-    <div id="toast" class="fixed bottom-4 right-4 z-50 transform translate-y-20 opacity-0 transition-all duration-300 glass-panel border border-brand-lime px-4 py-3 rounded-2xl flex items-center gap-3 shadow-2xl text-sm">
+    <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 glass-panel border border-brand-lime px-4 py-3 rounded-2xl flex items-center gap-3 shadow-2xl text-sm">
         <i data-lucide="check-circle" class="w-5 h-5 text-brand-lime"></i>
         <span id="toastMessage" class="font-semibold text-white">Copied!</span>
     </div>
@@ -465,7 +476,7 @@
     </div>
 
     <!-- Footer -->
-    <footer class="relative z-10 py-2 sm:py-3 text-center text-xs text-slate-500 border-t border-white/5 shrink-0">
+    <footer class="relative z-10 py-3 text-center text-xs text-slate-500 border-t border-white/5">
         <p>SANMINA Penang Plant 2 Pickleball Club • Official Blind Box Challenge 2026</p>
     </footer>
 
@@ -510,7 +521,6 @@
             }
         }
 
-        // Switch tabs programmatically (used by auto-rotate)
         function switchTab(tabName) {
             document.getElementById('tabCountdown').classList.add('hidden');
             document.getElementById('tabAgenda').classList.add('hidden');
@@ -545,7 +555,7 @@
             autoRotateInterval = setInterval(() => {
                 currentTabIndex = (currentTabIndex + 1) % tabsOrder.length;
                 switchTab(tabsOrder[currentTabIndex]);
-            }, 15000); // 15 seconds interval
+            }, 15000);
         }
 
         function toggleAutoRotate() {
