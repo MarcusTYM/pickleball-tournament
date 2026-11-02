@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pickleball Blind Box Challenge 2026</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            lime: '#CCFF00',
+                            limeGlow: '#d8ff33',
+                            teal: '#00F5D4',
+                            red: '#FF3366',
+                            dark: '#0B1120',
+                            card: '#162032',
+                            cardBorder: '#233248',
+                            accent: '#38BDF8'
+                        }
+                    },
+                    fontFamily: {
+                        outfit: ['Outfit', 'sans-serif'],
+                        sans: ['Plus Jakarta Sans', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #0B1120;
+            color: #F8FAFC;
+            overflow-x: hidden;
+        }
+
+        .glass-panel {
+            background: rgba(22, 32, 50, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(204, 255, 0, 0.2);
+        }
+
+        .glass-card {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .glow-lime {
+            box-shadow: 0 0 30px -5px rgba(204, 255, 0, 0.3);
+        }
+
+        .text-glow-lime {
+            text-shadow: 0 0 18px rgba(204, 255, 0, 0.6);
+        }
+
+        .tab-active {
+            background-color: #CCFF00;
+            color: #0B1120;
+            font-weight: 800;
+            box-shadow: 0 0 15px rgba(204, 255, 0, 0.4);
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0B1120;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #233248;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #CCFF00;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-brand-lime selection:text-brand-dark">
+
+    <!-- Ambient Glowing Background Grid & Effects -->
+    <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        <div class="absolute -top-40 -left-40 w-96 h-96 bg-brand-lime/10 rounded-full blur-3xl"></div>
+        <div class="absolute top-1/3 -right-20 w-96 h-96 bg-brand-teal/10 rounded-full blur-3xl"></div>
+        <div class="absolute -bottom-20 left-1/3 w-[500px] h-[500px] bg-brand-red/10 rounded-full blur-3xl"></div>
+
+        <!-- Court Lines SVG Pattern -->
+        <svg class="absolute inset-0 w-full h-full opacity-5" xmlns="http://www.w3.org/2000/svg">
+            <line x1="50%" y1="0" x2="50%" y2="100%" stroke="#CCFF00" stroke-width="4" stroke-dasharray="12 12" />
+            <rect x="5%" y="10%" width="90%" height="80%" fill="none" stroke="#FFFFFF" stroke-width="2" />
+            <line x1="5%" y1="35%" x2="95%" y2="35%" stroke="#FFFFFF" stroke-width="2" />
+            <line x1="5%" y1="65%" x2="95%" y2="65%" stroke="#FFFFFF" stroke-width="2" />
+        </svg>
+    </div>
+
+    <!-- Top Navigation Header -->
+    <header class="relative z-20 px-3 py-3 sm:px-6 md:px-8 max-w-7xl mx-auto w-full flex items-center justify-between border-b border-white/10 gap-2">
+        <div class="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div class="p-2 sm:p-2.5 bg-brand-lime/10 border border-brand-lime/40 rounded-xl sm:rounded-2xl text-brand-lime flex items-center justify-center shrink-0">
+                <i data-lucide="package" class="w-5 h-5 sm:w-6 sm:h-6"></i>
+            </div>
+            <div class="min-w-0 flex-1">
+                <span class="text-[9px] sm:text-xs font-extrabold uppercase tracking-widest text-brand-lime block truncate">Sanmina Penang Plant 2</span>
+                <h1 class="font-outfit font-black text-sm sm:text-xl lg:text-2xl tracking-tight text-white truncate">
+                    BLIND BOX <span class="text-brand-lime">CHALLENGE 2026</span>
+                </h1>
+            </div>
+        </div>
+
+        <!-- Header Controls -->
+        <div class="flex items-center gap-1.5 sm:gap-3 shrink-0">
+            <button id="settingsBtn" onclick="openSettingsModal()" class="hidden flex items-center gap-2 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-white/10 text-xs sm:text-sm font-semibold text-slate-200 transition-all hover:border-brand-lime/40">
+                <i data-lucide="settings" class="w-4 h-4 text-brand-lime"></i>
+                <span class="hidden md:inline">Set Details</span>
+            </button>
+
+            <div id="adminBadge" class="hidden text-[9px] sm:text-[10px] font-bold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full bg-brand-lime/20 text-brand-lime border border-brand-lime/30 uppercase tracking-wider">
+                Admin
+            </div>
+
+            <button id="lockToggleBtn" onclick="handleLockClick()" title="Toggle Admin Lock Mode" class="p-2 sm:p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-white/10 text-slate-400 hover:text-brand-lime transition-all flex items-center justify-center">
+                <i data-lucide="lock" class="w-4 h-4" id="lockIcon"></i>
+            </button>
+
+            <button onclick="toggleFullscreen()" title="Toggle Presentation / TV Mode" class="p-2 sm:p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-white/10 text-slate-200 hover:text-brand-teal transition-all">
+                <i data-lucide="maximize" class="w-4 h-4"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="relative z-10 max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-8 flex-grow flex flex-col justify-start gap-4 sm:gap-6 w-full">
+
+        <!-- Announcement Banner for Game Day -->
+        <div id="gameDayBanner" class="hidden glass-panel border-2 border-brand-lime glow-lime rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-center animate-bounce">
+            <h2 class="font-outfit font-black text-2xl sm:text-4xl text-brand-lime tracking-wider uppercase mb-1 sm:mb-2">
+                🎁 IT'S GAME DAY! OPEN YOUR BLIND BOX! 🎁
+            </h2>
+            <p class="text-slate-200 text-xs sm:text-base">Check-in at G.O.A.T Pickle Club! Partner & Prizes are being revealed NOW!</p>
+        </div>
+
+        <!-- Banner Info -->
+        <div class="text-center space-y-1.5 sm:space-y-2 max-w-3xl mx-auto px-1">
+            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-red/20 border border-brand-red/40 text-white text-[10px] sm:text-xs font-bold uppercase tracking-widest max-w-full truncate">
+                <span class="w-1.5 h-1.5 rounded-full bg-brand-red animate-ping shrink-0"></span>
+                <span id="eventTagline" class="truncate">Sanmina Penang Plant 2 Pickleball Club</span>
+            </div>
+            <h2 id="displayEventTitle" class="font-outfit font-black text-2xl sm:text-5xl lg:text-6xl text-white tracking-tight leading-tight uppercase">
+                PICKLEBALL BLIND BOX CHALLENGE 2026
+            </h2>
+            <a id="displayVenue" href="https://maps.app.goo.gl/xLFJnchPnZgSTet68" target="_blank" rel="noopener noreferrer" class="text-slate-300 hover:text-brand-lime transition-colors text-xs sm:text-base flex items-center justify-center gap-1.5 font-semibold group cursor-pointer">
+                <i data-lucide="map-pin" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-brand-lime shrink-0 group-hover:scale-110 transition-transform"></i>
+                <span class="underline underline-offset-4 decoration-brand-lime/40 group-hover:decoration-brand-lime">G.O.A.T Pickle Club - Sungai Pinang</span>
+                <i data-lucide="external-link" class="w-3 h-3 text-slate-400 group-hover:text-brand-lime transition-colors"></i>
+            </a>
+        </div>
+
+        <!-- TAB NAVIGATION SWITCHER -->
+        <div class="flex justify-center my-1 sm:my-2">
+            <div class="p-1 sm:p-1.5 bg-slate-900/90 border border-white/10 rounded-xl sm:rounded-2xl flex gap-1 max-w-lg w-full">
+                <button id="tabCountdownBtn" onclick="switchTab('countdown')" class="tab-active flex-1 py-2 px-2 sm:px-3 rounded-lg sm:rounded-xl text-[11px] sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-all">
+                    <i data-lucide="timer" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
+                    <span>Countdown</span>
+                </button>
+                <button id="tabAgendaBtn" onclick="switchTab('agenda')" class="text-slate-400 hover:text-white flex-1 py-2 px-2 sm:px-3 rounded-lg sm:rounded-xl text-[11px] sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-all">
+                    <i data-lucide="calendar" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
+                    <span>Schedule</span>
+                </button>
+                <button id="tabGuidelinesBtn" onclick="switchTab('guidelines')" class="text-slate-400 hover:text-white flex-1 py-2 px-2 sm:px-3 rounded-lg sm:rounded-xl text-[11px] sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-all">
+                    <i data-lucide="shield-alert" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
+                    <span>Details</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- TAB 1: COUNTDOWN DISPLAY -->
+        <div id="tabCountdown" class="space-y-4 sm:space-y-6">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4 lg:gap-6 max-w-5xl mx-auto w-full">
+                
+                <!-- Days Card -->
+                <div class="glass-panel rounded-2xl sm:rounded-3xl p-3 sm:p-6 text-center flex flex-col justify-center items-center relative overflow-hidden group border-t-4 border-t-brand-lime">
+                    <span id="days" class="font-outfit font-black text-4xl sm:text-6xl lg:text-8xl text-white tracking-tight text-glow-lime leading-none">00</span>
+                    <span class="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 mt-1.5 sm:mt-2 flex items-center gap-1">
+                        <i data-lucide="calendar-days" class="w-3 h-3 sm:w-4 sm:h-4 text-brand-lime"></i> Days
+                    </span>
+                </div>
+
+                <!-- Hours Card -->
+                <div class="glass-panel rounded-2xl sm:rounded-3xl p-3 sm:p-6 text-center flex flex-col justify-center items-center relative overflow-hidden group border-t-4 border-t-brand-teal">
+                    <span id="hours" class="font-outfit font-black text-4xl sm:text-6xl lg:text-8xl text-white tracking-tight leading-none">00</span>
+                    <span class="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 mt-1.5 sm:mt-2 flex items-center gap-1">
+                        <i data-lucide="clock" class="w-3 h-3 sm:w-4 sm:h-4 text-brand-teal"></i> Hours
+                    </span>
+                </div>
+
+                <!-- Minutes Card -->
+                <div class="glass-panel rounded-2xl sm:rounded-3xl p-3 sm:p-6 text-center flex flex-col justify-center items-center relative overflow-hidden group border-t-4 border-t-brand-lime">
+                    <span id="minutes" class="font-outfit font-black text-4xl sm:text-6xl lg:text-8xl text-white tracking-tight leading-none">00</span>
+                    <span class="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 mt-1.5 sm:mt-2 flex items-center gap-1">
+                        <i data-lucide="timer" class="w-3 h-3 sm:w-4 sm:h-4 text-brand-lime"></i> Mins
+                    </span>
+                </div>
+
+                <!-- Seconds Card -->
+                <div class="glass-panel rounded-2xl sm:rounded-3xl p-3 sm:p-6 text-center flex flex-col justify-center items-center relative overflow-hidden group border-t-4 border-t-brand-red">
+                    <span id="seconds" class="font-outfit font-black text-4xl sm:text-6xl lg:text-8xl text-brand-lime tracking-tight text-glow-lime leading-none">00</span>
+                    <span class="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 mt-1.5 sm:mt-2 flex items-center gap-1">
+                        <i data-lucide="zap" class="w-3 h-3 sm:w-4 sm:h-4 text-brand-red"></i> Secs
+                    </span>
+                </div>
+
+            </div>
+
+            <!-- Hype Button & Community Energy -->
+            <div class="flex flex-col items-center justify-center gap-2.5 my-1 sm:my-2">
+                <button id="hypeBtn" onclick="triggerHype()" class="group relative w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-3.5 sm:px-10 sm:py-5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-brand-lime via-brand-teal to-brand-lime text-brand-dark font-outfit font-black text-base sm:text-2xl uppercase tracking-wider shadow-lg active:scale-95 transition-all duration-200">
+                    <i data-lucide="zap" class="w-5 h-5 sm:w-6 sm:h-6 fill-brand-dark group-hover:rotate-12 transition-transform"></i>
+                    <span>SMASH IT! 🏓</span>
+                </button>
+            </div>
+
+            <!-- Quick Info Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 max-w-4xl mx-auto w-full">
+                <div class="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-5 flex items-center justify-between border-l-4 border-l-brand-lime">
+                    <div>
+                        <span class="text-[10px] sm:text-xs text-slate-400 uppercase font-bold">Event Date & Time</span>
+                        <h4 id="displayDateText" class="font-outfit font-bold text-sm sm:text-lg text-white">14th November 2026 (Saturday)</h4>
+                        <p id="displayTimeText" class="text-xs text-brand-lime font-semibold">08:00 AM Check-in Starts</p>
+                    </div>
+                    <i data-lucide="calendar" class="w-6 h-6 sm:w-8 sm:h-8 text-brand-lime/50 shrink-0 ml-2"></i>
+                </div>
+
+                <a href="https://maps.app.goo.gl/xLFJnchPnZgSTet68" target="_blank" rel="noopener noreferrer" class="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-5 flex items-center justify-between border-l-4 border-l-brand-teal hover:border-brand-lime transition-all hover:scale-[1.02] cursor-pointer group">
+                    <div>
+                        <span class="text-[10px] sm:text-xs text-slate-400 uppercase font-bold flex items-center gap-1">
+                            Location <i data-lucide="external-link" class="w-3 h-3 text-brand-teal group-hover:text-brand-lime"></i>
+                        </span>
+                        <h4 class="font-outfit font-bold text-sm sm:text-lg text-white group-hover:text-brand-lime transition-colors">G.O.A.T Pickle Club</h4>
+                        <p class="text-xs text-brand-teal font-semibold group-hover:text-brand-lime transition-colors">Sungai Pinang (Open in Google Maps 📍)</p>
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-brand-teal/10 border border-brand-teal/30 group-hover:bg-brand-lime/20 group-hover:border-brand-lime/50 transition-all shrink-0 ml-2">
+                        <i data-lucide="map-pin" class="w-6 h-6 sm:w-7 sm:h-7 text-brand-teal group-hover:text-brand-lime transition-colors"></i>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <!-- TAB 2: EVENT SCHEDULE & AGENDA -->
+        <div id="tabAgenda" class="hidden max-w-4xl mx-auto w-full space-y-4 sm:space-y-6">
+            <div class="glass-panel rounded-2xl sm:rounded-3xl p-4 sm:p-8 space-y-4 sm:space-y-6 border border-white/10">
+                <div class="flex items-center justify-between border-b border-white/10 pb-3 sm:pb-4 gap-2">
+                    <div class="flex items-center gap-2.5">
+                        <div class="p-2 sm:p-2.5 bg-brand-lime/10 border border-brand-lime/30 rounded-xl text-brand-lime">
+                            <i data-lucide="clock" class="w-5 h-5 sm:w-6 sm:h-6"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-outfit font-black text-lg sm:text-2xl text-white">EVENT SCHEDULE</h3>
+                            <p class="text-[11px] sm:text-xs text-slate-400">Please review and arrive early</p>
+                        </div>
+                    </div>
+                    <span class="text-[10px] sm:text-xs font-bold text-brand-lime bg-brand-lime/10 border border-brand-lime/30 px-2.5 py-1 rounded-full uppercase shrink-0">14 Nov 2026</span>
+                </div>
+
+                <!-- Schedule Timeline List -->
+                <div class="space-y-2.5 sm:space-y-4">
+                    <div class="flex flex-row items-center justify-between p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-slate-900/70 border border-white/5 gap-2 hover:border-brand-lime/30 transition-all">
+                        <div class="flex items-center gap-2.5 min-w-0">
+                            <span class="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-brand-lime shrink-0"></span>
+                            <span class="font-outfit font-bold text-white text-xs sm:text-lg truncate">Arrival & Check-in</span>
+                        </div>
+                        <span class="px-2.5 py-1 rounded-lg bg-slate-800 text-brand-lime font-extrabold text-[11px] sm:text-sm shrink-0 border border-brand-lime/20">
+                            8:00 AM – 8:30 AM
+                        </span>
+                    </div>
+
+                    <div class="flex flex-row items-center justify-between p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-slate-900/70 border border-white/5 gap-2 hover:border-brand-lime/30 transition-all">
+                        <div class="flex items-center gap-2.5 min-w-0">
+                            <span class="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-brand-teal shrink-0"></span>
+                            <span class="font-outfit font-bold text-white text-xs sm:text-lg truncate">Warm-up & Briefing</span>
+                        </div>
+                        <span class="px-2.5 py-1 rounded-lg bg-slate-800 text-brand-teal font-extrabold text-[11px] sm:text-sm shrink-0 border border-brand-teal/20">
+                            8:30 AM – 9:00 AM
+                        </span>
+                    </div>
+
+                    <div class="flex flex-row items-center justify-between p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-slate-900/70 border border-white/5 gap-2 hover:border-brand-lime/30 transition-all">
+                        <div class="flex items-center gap-2.5 min-w-0">
+                            <span class="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-brand-accent shrink-0"></span>
+                            <span class="font-outfit font-bold text-white text-xs sm:text-lg truncate">Group Photo</span>
+                        </div>
+                        <span class="px-2.5 py-1 rounded-lg bg-slate-800 text-brand-accent font-extrabold text-[11px] sm:text-sm shrink-0 border border-brand-accent/20">
+                            9:00 AM – 9:10 AM
+                        </span>
+                    </div>
+
+                    <div class="flex flex-row items-center justify-between p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-brand-red/20 border-2 border-brand-red gap-2 shadow-lg">
+                        <div class="flex items-center gap-2.5 min-w-0">
+                            <span class="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-brand-red animate-ping shrink-0"></span>
+                            <span class="font-outfit font-black text-white text-xs sm:text-xl uppercase tracking-wide truncate">Matches Begin!</span>
+                        </div>
+                        <span class="px-2.5 py-1 rounded-lg bg-brand-red text-white font-black text-[11px] sm:text-sm shrink-0">
+                            9:10 AM
+                        </span>
+                    </div>
+
+                    <div class="flex flex-row items-center justify-between p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-slate-900/70 border border-white/5 gap-2 hover:border-brand-lime/30 transition-all">
+                        <div class="flex items-center gap-2.5 min-w-0">
+                            <span class="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-brand-teal shrink-0"></span>
+                            <span class="font-outfit font-bold text-white text-xs sm:text-lg truncate">Knockout & Finals</span>
+                        </div>
+                        <span class="px-2.5 py-1 rounded-lg bg-slate-800 text-brand-teal font-extrabold text-[11px] sm:text-sm shrink-0 border border-brand-teal/20">
+                            12:00 PM – 1:00 PM
+                        </span>
+                    </div>
+
+                    <div class="flex flex-row items-center justify-between p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-slate-900/70 border border-white/5 gap-2 hover:border-brand-lime/30 transition-all">
+                        <div class="flex items-center gap-2.5 min-w-0">
+                            <span class="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-brand-lime shrink-0"></span>
+                            <span class="font-outfit font-bold text-white text-xs sm:text-lg truncate">Prize Ceremony</span>
+                        </div>
+                        <span class="px-2.5 py-1 rounded-lg bg-slate-800 text-brand-lime font-extrabold text-[11px] sm:text-sm shrink-0 border border-brand-lime/20">
+                            1:00 PM
+                        </span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- TAB 3: GUIDELINES & BLIND BOX FORMAT -->
+        <div id="tabGuidelines" class="hidden max-w-4xl mx-auto w-full space-y-4 sm:space-y-6">
+            <div class="glass-panel rounded-2xl sm:rounded-3xl p-5 sm:p-8 border-2 border-brand-lime glow-lime space-y-3 text-center relative overflow-hidden">
+                <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-lime/20 text-brand-lime text-[10px] sm:text-xs font-bold uppercase tracking-widest">
+                    🎁 Blind Box Format
+                </div>
+                <h3 class="font-outfit font-black text-xl sm:text-3xl text-white uppercase tracking-tight">
+                    PARTNER & PRIZE REVEALED ON EVENT DAY!
+                </h3>
+                <p class="text-slate-300 text-xs sm:text-sm max-w-2xl mx-auto leading-relaxed">
+                    Get ready for an exciting mystery pairing! Partners and special gear prizes will be drawn and revealed live right before matches launch.
+                </p>
+            </div>
+
+            <div class="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-6 border-l-4 border-l-brand-red space-y-1.5">
+                <div class="flex items-center gap-2 text-brand-red font-outfit font-bold text-base sm:text-lg">
+                    <i data-lucide="alarm-clock" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+                    <h4>Arrival Note</h4>
+                </div>
+                <p class="text-slate-200 text-xs sm:text-sm leading-relaxed">
+                    All participants are strongly encouraged to arrive <span class="text-brand-lime font-bold underline">before 8:30 AM</span> to complete check-in so we can stay on schedule.
+                </p>
+            </div>
+
+            <div class="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-6 border-l-4 border-l-brand-teal space-y-1.5">
+                <div class="flex items-center gap-2 text-brand-teal font-outfit font-bold text-base sm:text-lg">
+                    <i data-lucide="shield-check" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+                    <h4>Friendly Reminder & Safety Disclaimer</h4>
+                </div>
+                <p class="text-slate-300 text-xs sm:text-sm leading-relaxed">
+                    Your safety is important to us. Please ensure you are physically fit to play and take personal responsibility for your safety throughout the event. 
+                    <br><strong class="text-white block mt-2 font-outfit text-sm sm:text-base">See you on the court! 🏓</strong>
+                </p>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 glass-panel border border-brand-lime px-4 py-3 rounded-xl flex items-center gap-3 shadow-2xl">
+        <i data-lucide="check-circle" class="w-5 h-5 text-brand-lime"></i>
+        <span id="toastMessage" class="text-sm font-semibold text-white">Copied!</span>
+    </div>
+
+    <!-- PIN ENTER MODAL -->
+    <div id="pinModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="glass-panel border border-brand-lime/40 rounded-3xl p-6 sm:p-8 max-w-sm w-full space-y-5 text-center shadow-2xl relative">
+            <button onclick="closePinModal()" class="absolute top-5 right-5 text-slate-400 hover:text-white">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+            <div class="w-12 h-12 bg-brand-lime/10 border border-brand-lime/30 text-brand-lime rounded-2xl flex items-center justify-center mx-auto">
+                <i data-lucide="key-round" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <h3 class="font-outfit font-extrabold text-xl text-white">Admin Authentication</h3>
+                <p class="text-xs text-slate-400 mt-1">Enter PIN to unlock date & event settings</p>
+            </div>
+            <form onsubmit="submitPin(event)" class="space-y-4">
+                <input type="password" id="pinInput" maxlength="10" placeholder="Enter PIN" class="w-full text-center text-lg tracking-widest bg-slate-900/90 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-brand-lime" required autofocus>
+                <div class="flex gap-2">
+                    <button type="button" onclick="closePinModal()" class="w-1/2 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300">Cancel</button>
+                    <button type="submit" class="w-1/2 py-2.5 rounded-xl bg-brand-lime hover:bg-brand-limeGlow text-xs font-bold text-brand-dark">Unlock</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div id="settingsModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="glass-panel border border-slate-700 rounded-3xl p-6 sm:p-8 max-w-lg w-full space-y-6 relative shadow-2xl">
+            <button onclick="closeSettingsModal()" class="absolute top-6 right-6 text-slate-400 hover:text-white">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-brand-lime/10 rounded-xl text-brand-lime">
+                    <i data-lucide="settings" class="w-6 h-6"></i>
+                </div>
+                <h3 class="font-outfit font-bold text-xl text-white">Configure Event Details</h3>
+            </div>
+
+            <form id="settingsForm" onsubmit="saveSettings(event)" class="space-y-4 text-xs sm:text-sm">
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">Event Name</label>
+                    <input type="text" id="inputTitle" class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-brand-lime" required>
+                </div>
+
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">Venue / Location</label>
+                    <input type="text" id="inputVenue" class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-brand-lime" required>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-slate-300 font-semibold mb-1">Date</label>
+                        <input type="date" id="inputDate" class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-brand-lime" required>
+                    </div>
+                    <div>
+                        <label class="block text-slate-300 font-semibold mb-1">Time</label>
+                        <input type="time" id="inputTime" class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-brand-lime" required>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">Host / Organization</label>
+                    <input type="text" id="inputTagline" class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-brand-lime">
+                </div>
+
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">Admin Passcode (PIN)</label>
+                    <input type="password" id="inputPin" class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-brand-lime" placeholder="Enter new PIN">
+                </div>
+
+                <div class="flex gap-3 pt-4">
+                    <button type="button" onclick="closeSettingsModal()" class="w-1/2 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 font-semibold text-slate-300">
+                        Cancel
+                    </button>
+                    <button type="submit" class="w-1/2 py-3 rounded-xl bg-brand-lime hover:bg-brand-limeGlow font-bold text-brand-dark">
+                        Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="relative z-10 py-4 text-center text-xs text-slate-500 border-t border-white/5">
+        <p>SANMINA Penang Plant 2 Pickleball Club • Official Blind Box Challenge 2026</p>
+    </footer>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // Default Configuration
+        let eventConfig = {
+            title: "PICKLEBALL BLIND BOX CHALLENGE 2026",
+            venue: "G.O.A.T Pickle Club - Sungai Pinang",
+            tagline: "Hosted by Sanmina Penang Plant 2 Pickleball Club",
+            targetDate: "2026-11-14",
+            targetTime: "08:00",
+            adminPin: "1234",
+            isLocked: true
+        };
+
+        let timerInterval = null;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            loadSavedConfig();
+            initLucide();
+            updateDisplayValues();
+            applyLockState();
+            startCountdown();
+
+            window.addEventListener('keydown', (e) => {
+                if (e.altKey && (e.key === 'l' || e.key === 'L')) {
+                    e.preventDefault();
+                    handleLockClick();
+                }
+            });
+        });
+
+        function initLucide() {
+            if (window.lucide) {
+                lucide.createIcons();
+            }
+        }
+
+        function switchTab(tabName) {
+            document.getElementById('tabCountdown').classList.add('hidden');
+            document.getElementById('tabAgenda').classList.add('hidden');
+            document.getElementById('tabGuidelines').classList.add('hidden');
+
+            document.getElementById('tabCountdownBtn').classList.remove('tab-active');
+            document.getElementById('tabAgendaBtn').classList.remove('tab-active');
+            document.getElementById('tabGuidelinesBtn').classList.remove('tab-active');
+
+            if (tabName === 'countdown') {
+                document.getElementById('tabCountdown').classList.remove('hidden');
+                document.getElementById('tabCountdownBtn').classList.add('tab-active');
+            } else if (tabName === 'agenda') {
+                document.getElementById('tabAgenda').classList.remove('hidden');
+                document.getElementById('tabAgendaBtn').classList.add('tab-active');
+            } else if (tabName === 'guidelines') {
+                document.getElementById('tabGuidelines').classList.remove('hidden');
+                document.getElementById('tabGuidelinesBtn').classList.add('tab-active');
+            }
+            initLucide();
+        }
+
+        function loadSavedConfig() {
+            const saved = localStorage.getItem('sanmina_pickleball_config');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    eventConfig = { ...eventConfig, ...parsed };
+                } catch(e) {}
+            }
+        }
+
+        function saveConfig() {
+            localStorage.setItem('sanmina_pickleball_config', JSON.stringify(eventConfig));
+        }
+
+        function applyLockState() {
+            const settingsBtn = document.getElementById('settingsBtn');
+            const adminBadge = document.getElementById('adminBadge');
+            const lockIcon = document.getElementById('lockIcon');
+            const lockToggleBtn = document.getElementById('lockToggleBtn');
+
+            if (eventConfig.isLocked) {
+                settingsBtn.classList.add('hidden');
+                adminBadge.classList.add('hidden');
+                lockToggleBtn.classList.remove('bg-brand-lime/20', 'text-brand-lime', 'border-brand-lime/50');
+                lockToggleBtn.classList.add('bg-slate-800', 'text-slate-400');
+                lockIcon.setAttribute('data-lucide', 'lock');
+            } else {
+                settingsBtn.classList.remove('hidden');
+                adminBadge.classList.remove('hidden');
+                lockToggleBtn.classList.add('bg-brand-lime/20', 'text-brand-lime', 'border-brand-lime/50');
+                lockToggleBtn.classList.remove('bg-slate-800', 'text-slate-400');
+                lockIcon.setAttribute('data-lucide', 'unlock');
+            }
+            initLucide();
+        }
+
+        function handleLockClick() {
+            if (eventConfig.isLocked) {
+                openPinModal();
+            } else {
+                eventConfig.isLocked = true;
+                saveConfig();
+                applyLockState();
+                showToast("🔒 Admin Settings Locked");
+            }
+        }
+
+        function openPinModal() {
+            document.getElementById('pinInput').value = '';
+            document.getElementById('pinModal').classList.remove('hidden');
+            setTimeout(() => document.getElementById('pinInput').focus(), 100);
+        }
+
+        function closePinModal() {
+            document.getElementById('pinModal').classList.add('hidden');
+        }
+
+        function submitPin(e) {
+            e.preventDefault();
+            const inputVal = document.getElementById('pinInput').value.trim();
+            if (inputVal === eventConfig.adminPin) {
+                eventConfig.isLocked = false;
+                saveConfig();
+                applyLockState();
+                closePinModal();
+                showToast("🔓 Unlocked Admin Mode");
+            } else {
+                showToast("❌ Incorrect Passcode!");
+                document.getElementById('pinInput').value = '';
+            }
+        }
+
+        function updateDisplayValues() {
+            document.getElementById('displayEventTitle').innerText = eventConfig.title;
+            document.getElementById('displayVenue').querySelector('span').innerText = eventConfig.venue;
+            document.getElementById('eventTagline').innerText = eventConfig.tagline;
+
+            const [year, month, day] = eventConfig.targetDate.split('-');
+            const dateObj = new Date(year, month - 1, day);
+            const formattedDate = dateObj.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+
+            document.getElementById('displayDateText').innerText = `${formattedDate} (Saturday)`;
+            document.getElementById('displayTimeText').innerText = `${eventConfig.targetTime} AM Check-in Starts`;
+        }
+
+        function startCountdown() {
+            if (timerInterval) clearInterval(timerInterval);
+
+            function update() {
+                const targetString = `${eventConfig.targetDate}T${eventConfig.targetTime}:00`;
+                const targetEpoch = new Date(targetString).getTime();
+                const now = new Date().getTime();
+                const diff = targetEpoch - now;
+
+                const daysEl = document.getElementById('days');
+                const hoursEl = document.getElementById('hours');
+                const minutesEl = document.getElementById('minutes');
+                const secondsEl = document.getElementById('seconds');
+                const banner = document.getElementById('gameDayBanner');
+
+                if (diff <= 0) {
+                    daysEl.innerText = "00";
+                    hoursEl.innerText = "00";
+                    minutesEl.innerText = "00";
+                    secondsEl.innerText = "00";
+                    banner.classList.remove('hidden');
+                    return;
+                } else {
+                    banner.classList.add('hidden');
+                }
+
+                const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const s = Math.floor((diff % (1000 * 60)) / 1000);
+
+                daysEl.innerText = String(d).padStart(2, '0');
+                hoursEl.innerText = String(h).padStart(2, '0');
+                minutesEl.innerText = String(m).padStart(2, '0');
+                secondsEl.innerText = String(s).padStart(2, '0');
+            }
+
+            update();
+            timerInterval = setInterval(update, 1000);
+        }
+
+        function triggerHype() {
+            if (window.confetti) {
+                confetti({
+                    particleCount: 80,
+                    spread: 80,
+                    origin: { y: 0.75 },
+                    colors: ['#CCFF00', '#00F5D4', '#FF3366', '#FFFFFF']
+                });
+            }
+
+            showToast("🏓 Smash logged! Let's GO!");
+        }
+
+        function openSettingsModal() {
+            document.getElementById('inputTitle').value = eventConfig.title;
+            document.getElementById('inputVenue').value = eventConfig.venue;
+            document.getElementById('inputTagline').value = eventConfig.tagline;
+            document.getElementById('inputDate').value = eventConfig.targetDate;
+            document.getElementById('inputTime').value = eventConfig.targetTime;
+            document.getElementById('inputPin').value = eventConfig.adminPin;
+
+            document.getElementById('settingsModal').classList.remove('hidden');
+        }
+
+        function closeSettingsModal() {
+            document.getElementById('settingsModal').classList.add('hidden');
+        }
+
+        function saveSettings(e) {
+            e.preventDefault();
+            eventConfig.title = document.getElementById('inputTitle').value;
+            eventConfig.venue = document.getElementById('inputVenue').value;
+            eventConfig.tagline = document.getElementById('inputTagline').value;
+            eventConfig.targetDate = document.getElementById('inputDate').value;
+            eventConfig.targetTime = document.getElementById('inputTime').value;
+
+            const newPin = document.getElementById('inputPin').value.trim();
+            if (newPin.length > 0) {
+                eventConfig.adminPin = newPin;
+            }
+
+            saveConfig();
+            updateDisplayValues();
+            startCountdown();
+            closeSettingsModal();
+            showToast("Event settings saved!");
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    showToast("Fullscreen mode not supported.");
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMessage').innerText = msg;
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
