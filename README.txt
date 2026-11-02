@@ -26,3 +26,59 @@ Shows live scores across all 3 courts and real-time updated group standings with
 Reset / New Tournament Button (Host Dashboard)
 
 A protected "Reset Tournament" button on the host page to clear Upstash Redis data and restart fresh when testing or starting a new event.
+
+git log --oneline
+git reset --hard <YOUR-YESTERDAY-COMMIT-ID>
+git push origin main --force
+
+git add public/index.html
+git commit -m "easy scroll"
+git push origin main
+
+
+A-FAIZ
+ROU CHEN
+
+A-KELVIN
+JANUS
+
+A-MARCUS
+PEI HOON
+
+B-KELVIN
+JANUS
+
+B-MARCUS
+PEI HOON
+
+B-FAIZ
+ROU CHEN
+
+
+
+MUHAMMAD MUJIRIL AKROMIN/
+ASNIDA AWANG
+
+AHMAD SOLEHIN/
+KOAY PEI HOON
+
+WONG SIN YOKE/
+MUHAMMAD IKHMAL
+
+TENGKU MOHD YUSRI/
+MOHAMAD AKMAL
+
+NUR SYAFIQAH/
+SITI KHALIJAH
+
+LIEW PAU LIM/
+ONG ENG SEANG
+
+KELVIN CHENG/
+YEONG NA NA
+
+ZAHROBI/
+NG CHYE LIAN
+
+KANG HONG AIK/
+MICHELLE OOI
