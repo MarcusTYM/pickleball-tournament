@@ -284,6 +284,7 @@
   <script>
     const socket = io();
     let currentCourts = {};
+    let hasAutoCollapsedCourts = false; // Tracks whether auto-collapse already triggered for this podium result
 
     function toggleLiveCourts() {
       const container = document.getElementById('courtsContainer');
@@ -376,6 +377,24 @@
         const playoffMatch = tournament.knockout.matches.find(m => m.id === 103);
 
         let podiumHtml = '';
+        
+        // Check if Champions (1st), 2nd, and 3rd place are fully available
+        const hasChampion = finalMatch && finalMatch.winner;
+        const hasRunnerUp = finalMatch && finalMatch.loser;
+        const hasThirdPlace = playoffMatch && playoffMatch.winner;
+        const isPodiumComplete = hasChampion && hasRunnerUp && hasThirdPlace;
+
+        if (isPodiumComplete && !hasAutoCollapsedCourts) {
+          const container = document.getElementById('courtsContainer');
+          // If currently expanded, hide it and flip arrow icon
+          if (container.style.display !== 'none') {
+            toggleLiveCourts();
+          }
+          hasAutoCollapsedCourts = true; // Lock so manual clicks work afterward
+        } else if (!isPodiumComplete) {
+          hasAutoCollapsedCourts = false; // Reset flag if tournament status changes back
+        }
+
         if (finalMatch && finalMatch.winner) {
           podiumHtml = `
             <div class="podium-box">
@@ -423,6 +442,7 @@
       } else {
         document.getElementById('podiumContainer').innerHTML = '';
         document.getElementById('knockoutMatchesContainer').innerHTML = '<p style="color: #94a3b8; text-align: center; padding: 15px; margin: 0;">Round-Robin stage in progress. Knockout bracket will appear once finalized!</p>';
+        hasAutoCollapsedCourts = false;
       }
 
       let standingsHtml = '';
