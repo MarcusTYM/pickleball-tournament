@@ -35,6 +35,12 @@ git add public/index.html
 git commit -m "easy scroll"
 git push origin main
 
+git merge --abort
+git pull origin main
+git add public/spectator.html
+git commit -m "auto collapse live courts on podium"
+git push origin main
+
 
 A-FAIZ
 ROU CHEN
