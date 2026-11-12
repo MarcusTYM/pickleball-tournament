@@ -177,6 +177,21 @@
       font-style: normal;
     }
 
+    /* STAGE BADGE FOR KNOCKOUT ROWS */
+    .match-stage-badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 6px;
+      margin-bottom: 6px;
+      letter-spacing: 0.5px;
+    }
+    .badge-sf { background: #3b82f6; color: white; }
+    .badge-third { background: #d97706; color: white; }
+    .badge-final { background: #f59e0b; color: #1e293b; }
+
     /* MUTED SLATE DIVIDER WITH CENTRAL -VS- */
     .vs-divider {
       display: flex;
@@ -257,7 +272,7 @@
     tbody tr td:nth-child(4) { background-color: var(--light-bg-1); }
     tbody tr td:nth-child(5) { background-color: var(--light-bg-2); }
 
-    /* KNOCKOUT BRACKET STYLING */
+    /* KNOCKOUT BRACKET SECTION */
     .bracket-wrapper {
       display: flex;
       gap: 20px;
@@ -288,7 +303,6 @@
       font-style: normal;
     }
 
-    /* STAGE BADGES OUTSIDE MATCH CARD */
     .match-stage-label {
       text-align: center;
       font-weight: 800;
@@ -590,7 +604,7 @@
   <div class="header">
     <img src="logo.png" alt="Sanmina Logo">
     <h1>Match Schedule & Timetable</h1>
-    <p>Pickleball Blind Box Challenge 2026 - Round Robin Stage</p>
+    <p>Pickleball Blind Box Challenge 2026 - Round Robin & Knockout Stages</p>
   </div>
 
   <div class="filter-bar" id="filterBar">
@@ -603,7 +617,7 @@
 
   <!-- KNOCKOUT BRACKET SECTION -->
   <div class="header" style="margin-top: 36px;" id="knockoutHeader">
-    <h1>Knockout Stage</h1>
+    <h1>Knockout Stage Bracket</h1>
     <p>Elimination Bracket & Championship Matches</p>
   </div>
 
@@ -712,7 +726,8 @@
         return;
       }
 
-      const schedule = currentScheduleData.tournament.schedule;
+      const tournament = currentScheduleData.tournament;
+      const schedule = tournament.schedule;
       const groupCourtMap = { 'A': 'Court 4', 'B': 'Court 5', 'C': 'Court 6', 'D': 'Court 4', 'E': 'Court 5', 'F': 'Court 6' };
       
       const allActiveGroups = [...new Set(schedule.map(m => m.group))].sort();
@@ -745,14 +760,71 @@
           teamB, 
           status: m.status,
           scoreA: Number(scoreA),
-          scoreB: Number(scoreB)
+          scoreB: Number(scoreB),
+          isKnockout: false
         };
       });
 
+      const maxRrSlots = Math.max(...Object.values(groupCounters), 0);
+
+      if (tournament.knockout && tournament.knockout.generated && tournament.knockout.matches) {
+        const koMatches = tournament.knockout.matches;
+        
+        const sfMatches = koMatches.filter(m => m.id === 101 || m.id === 102 || (m.label && m.label.toLowerCase().includes('semifinal')));
+        const finalAndPlayoff = koMatches.filter(m => m.id === 103 || m.id === 104 || (m.label && (m.label.toLowerCase().includes('final') || m.label.toLowerCase().includes('playoff'))));
+
+        if (sfMatches.length > 0) {
+          const sfTimeStr = formatTime(maxRrSlots * 12);
+          if (!timeSlotMap[sfTimeStr]) timeSlotMap[sfTimeStr] = {};
+          
+          sfMatches.forEach((m, idx) => {
+            const courtKey = idx === 0 ? 'SF1' : 'SF2';
+            timeSlotMap[sfTimeStr][courtKey] = {
+              teamA: formatPairNameStacked(m.teamA),
+              teamB: formatPairNameStacked(m.teamB),
+              status: m.status,
+              scoreA: Number(m.scoreA ?? 0),
+              scoreB: Number(m.scoreB ?? 0),
+              isKnockout: true,
+              stageLabel: m.label || `Semifinal ${idx + 1}`,
+              badgeClass: 'badge-sf',
+              courtName: idx === 0 ? 'Court 4' : 'Court 5'
+            };
+          });
+        }
+
+        if (finalAndPlayoff.length > 0) {
+          const finalTimeStr = formatTime((maxRrSlots + 1) * 12);
+          if (!timeSlotMap[finalTimeStr]) timeSlotMap[finalTimeStr] = {};
+
+          finalAndPlayoff.forEach(m => {
+            const isMatchFinal = m.id === 104 || (m.label && m.label.toLowerCase().includes('final') && !m.label.toLowerCase().includes('third') && !m.label.toLowerCase().includes('3rd'));
+            const courtKey = isMatchFinal ? 'FINAL' : 'PLAYOFF';
+            
+            timeSlotMap[finalTimeStr][courtKey] = {
+              teamA: formatPairNameStacked(m.teamA),
+              teamB: formatPairNameStacked(m.teamB),
+              status: m.status,
+              scoreA: Number(m.scoreA ?? 0),
+              scoreB: Number(m.scoreB ?? 0),
+              isKnockout: true,
+              stageLabel: m.label || (isMatchFinal ? 'Finals (1st / 2nd)' : '3rd Place Playoff'),
+              badgeClass: isMatchFinal ? 'badge-final' : 'badge-third',
+              courtName: isMatchFinal ? 'Court 4' : 'Court 5'
+            };
+          });
+        }
+      }
+
       let html = '<table><thead><tr><th>Time</th>';
-      activeGroups.forEach(g => {
-        html += `<th>Group ${g} <span>(${groupCourtMap[g] || 'Court 4'})</span></th>`;
-      });
+      if (selectedGroupFilter === 'ALL') {
+        allActiveGroups.forEach(g => {
+          html += `<th>Group ${g} <span>(${groupCourtMap[g] || 'Court 4'})</span></th>`;
+        });
+        html += `<th>Knockout Stage <span>(Courts 4 & 5)</span></th>`;
+      } else {
+        html += `<th>Group ${selectedGroupFilter} <span>(${groupCourtMap[selectedGroupFilter] || 'Court 4'})</span></th>`;
+      }
       html += '</tr></thead><tbody>';
 
       let timeButtonsHtml = '';
@@ -761,69 +833,129 @@
         const rowId = `slot-${time.replace(':', '')}`;
         html += `<tr id="${rowId}"><td class="time-col">${time}</td>`;
         
-        activeGroups.forEach(g => {
-          const item = timeSlotMap[time][g];
-          const courtName = groupCourtMap[g] || 'Court 4';
-          const mobileLabel = `GROUP ${g} (${courtName})`;
+        if (selectedGroupFilter === 'ALL') {
+          allActiveGroups.forEach(g => {
+            const item = timeSlotMap[time][g];
+            const courtName = groupCourtMap[g] || 'Court 4';
+            const mobileLabel = `GROUP ${g} (${courtName})`;
+            html += renderTableCell(item, mobileLabel);
+          });
 
-          if (item) {
-            const statusLower = (item.status || '').toLowerCase();
-            const isFinished = statusLower === 'completed' || statusLower === 'finished';
-
-            const vsDividerHtml = `
-              <div class="vs-divider">
-                <div class="vs-line"></div>
-                <div class="vs-text">-VS-</div>
-                <div class="vs-line"></div>
-              </div>`;
-
-            const isWinnerA = isFinished && (item.scoreA > item.scoreB);
-            const isWinnerB = isFinished && (item.scoreB > item.scoreA);
-
-            if (isFinished) {
-              html += `<td class="match-cell completed" data-label="${mobileLabel}">
-                <div class="team-block">
-                  <div>${isWinnerA ? '<span class="trophy-icon">🏆</span>' : ''}</div>
-                  <div class="team-name ${isWinnerA ? 'winner-name' : ''}">${item.teamA}</div>
-                  <span class="mini-score">${item.scoreA}</span>
-                </div>
-                ${vsDividerHtml}
-                <div class="team-block">
-                  <div>${isWinnerB ? '<span class="trophy-icon">🏆</span>' : ''}</div>
-                  <div class="team-name ${isWinnerB ? 'winner-name' : ''}">${item.teamB}</div>
-                  <span class="mini-score">${item.scoreB}</span>
-                </div>
-              </td>`;
-            } else {
-              const isLive = statusLower === 'in_progress' || statusLower === 'active' || item.scoreA > 0 || item.scoreB > 0;
-              const scoreClass = isLive ? 'mini-score live-score' : 'mini-score';
-
-              html += `<td class="match-cell" data-label="${mobileLabel}">
-                <div class="team-block">
-                  <div></div>
-                  <div class="team-name">${item.teamA}</div>
-                  <span class="${scoreClass}">${item.scoreA}</span>
-                </div>
-                ${vsDividerHtml}
-                <div class="team-block">
-                  <div></div>
-                  <div class="team-name">${item.teamB}</div>
-                  <span class="${scoreClass}">${item.scoreB}</span>
-                </div>
-              </td>`;
-            }
+          const koKeys = ['SF1', 'SF2', 'PLAYOFF', 'FINAL'];
+          const activeKoInSlot = koKeys.filter(k => timeSlotMap[time][k]);
+          
+          if (activeKoInSlot.length > 0) {
+            let koCellContent = '';
+            activeKoInSlot.forEach(k => {
+              const item = timeSlotMap[time][k];
+              koCellContent += renderMatchContent(item, true);
+            });
+            html += `<td class="match-cell" data-label="KNOCKOUT STAGE">${koCellContent}</td>`;
           } else {
-            html += `<td class="empty-cell" data-label="${mobileLabel}">-</td>`;
+            html += `<td class="empty-cell" data-label="KNOCKOUT STAGE">-</td>`;
           }
-        });
-        html += '</tr>';
 
+        } else {
+          const item = timeSlotMap[time][selectedGroupFilter];
+          const courtName = groupCourtMap[selectedGroupFilter] || 'Court 4';
+          const mobileLabel = `GROUP ${selectedGroupFilter} (${courtName})`;
+          html += renderTableCell(item, mobileLabel);
+        }
+
+        html += '</tr>';
         timeButtonsHtml += `<button class="time-btn" onclick="scrollToTime('${rowId}')">${time}</button>`;
       });
 
       html += '</tbody></table>';
       document.getElementById('gridContainer').innerHTML = html;
       document.getElementById('timeGrid').innerHTML = timeButtonsHtml;
+    }
+
+    function renderTableCell(item, mobileLabel) {
+      if (!item) return `<td class="empty-cell" data-label="${mobileLabel}">-</td>`;
+
+      const statusLower = (item.status || '').toLowerCase();
+      const isFinished = statusLower === 'completed' || statusLower === 'finished';
+      const isWinnerA = isFinished && (item.scoreA > item.scoreB);
+      const isWinnerB = isFinished && (item.scoreB > item.scoreA);
+
+      const vsDividerHtml = `
+        <div class="vs-divider">
+          <div class="vs-line"></div>
+          <div class="vs-text">-VS-</div>
+          <div class="vs-line"></div>
+        </div>`;
+
+      let stageBadgeHtml = item.isKnockout ? `<span class="match-stage-badge ${item.badgeClass}">${item.stageLabel}</span><br>` : '';
+
+      if (isFinished) {
+        return `<td class="match-cell completed" data-label="${mobileLabel}">
+          ${stageBadgeHtml}
+          <div class="team-block">
+            <div>${isWinnerA ? '<span class="trophy-icon">🏆</span>' : ''}</div>
+            <div class="team-name ${isWinnerA ? 'winner-name' : ''}">${item.teamA}</div>
+            <span class="mini-score">${item.scoreA}</span>
+          </div>
+          ${vsDividerHtml}
+          <div class="team-block">
+            <div>${isWinnerB ? '<span class="trophy-icon">🏆</span>' : ''}</div>
+            <div class="team-name ${isWinnerB ? 'winner-name' : ''}">${item.teamB}</div>
+            <span class="mini-score">${item.scoreB}</span>
+          </div>
+        </td>`;
+      } else {
+        const isLive = statusLower === 'in_progress' || statusLower === 'active' || item.scoreA > 0 || item.scoreB > 0;
+        const scoreClass = isLive ? 'mini-score live-score' : 'mini-score';
+
+        return `<td class="match-cell" data-label="${mobileLabel}">
+          ${stageBadgeHtml}
+          <div class="team-block">
+            <div></div>
+            <div class="team-name">${item.teamA}</div>
+            <span class="${scoreClass}">${item.scoreA}</span>
+          </div>
+          ${vsDividerHtml}
+          <div class="team-block">
+            <div></div>
+            <div class="team-name">${item.teamB}</div>
+            <span class="${scoreClass}">${item.scoreB}</span>
+          </div>
+        </td>`;
+      }
+    }
+
+    function renderMatchContent(item, includeDivider = false) {
+      if (!item) return '';
+      const statusLower = (item.status || '').toLowerCase();
+      const isFinished = statusLower === 'completed' || statusLower === 'finished';
+      const isWinnerA = isFinished && (item.scoreA > item.scoreB);
+      const isWinnerB = isFinished && (item.scoreB > item.scoreA);
+
+      const vsDividerHtml = `
+        <div class="vs-divider">
+          <div class="vs-line"></div>
+          <div class="vs-text">-VS-</div>
+          <div class="vs-line"></div>
+        </div>`;
+
+      const stageBadgeHtml = `<span class="match-stage-badge ${item.badgeClass}">${item.stageLabel} (${item.courtName})</span><br>`;
+      const wrapperStyle = includeDivider ? 'margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px dashed var(--border-color);' : '';
+
+      return `
+        <div style="${wrapperStyle}">
+          ${stageBadgeHtml}
+          <div class="team-block">
+            <div>${isWinnerA ? '<span class="trophy-icon">🏆</span>' : ''}</div>
+            <div class="team-name ${isWinnerA ? 'winner-name' : ''}">${item.teamA}</div>
+            <span class="mini-score">${item.scoreA}</span>
+          </div>
+          ${vsDividerHtml}
+          <div class="team-block">
+            <div>${isWinnerB ? '<span class="trophy-icon">🏆</span>' : ''}</div>
+            <div class="team-name ${isWinnerB ? 'winner-name' : ''}">${item.teamB}</div>
+            <span class="mini-score">${item.scoreB}</span>
+          </div>
+        </div>`;
     }
 
     function renderKnockoutBracket(data) {
@@ -861,7 +993,6 @@
           const teamA = formatPairNameStacked(rawTeamA);
           const teamB = formatPairNameStacked(rawTeamB);
 
-          // Identify stage type
           let stageLabelHtml = '';
           const teamCombined = (rawTeamA + ' ' + rawTeamB).toLowerCase();
 
@@ -882,8 +1013,8 @@
               trophyA = isWinnerA ? '🥇' : '🥈';
               trophyB = isWinnerB ? '🥇' : '🥈';
             } else if (is3rdPlace) {
-              trophyA = isWinnerA ? '🥉' : '';
-              trophyB = isWinnerB ? '🥉' : '';
+              trophyA = isWinnerA ? '🥉' : '🏅';
+              trophyB = isWinnerB ? '🥉' : '🏅';
             } else {
               trophyA = isWinnerA ? '🏆' : '';
               trophyB = isWinnerB ? '🏆' : '';
@@ -948,4 +1079,4 @@
     }
   </script>
 </body>
-</html> 
+</html>
